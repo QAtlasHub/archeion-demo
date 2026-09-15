@@ -102,6 +102,9 @@ end
 end
 
 render(; out = OUT)
+# The machine face. Without it the record is a picture a program cannot read, and the registry
+# dashboard counts it under "no machine face" — which is how this line came to be missing.
+render(; theme = :agent, out = joinpath(OUT, "agent"))
 
 isdir(REG) || Archeion.create_registry(REG; name = "archeion-demo", repo = REPO,
     description = "A model Archeion registry: one record, rendered by Pinax and deposited here.")
