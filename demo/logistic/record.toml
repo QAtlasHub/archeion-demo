@@ -1,0 +1,12 @@
+summary = "A generic record, here to show the format: figures with their data, a table, math, and a repro bundle."
+git_dirty = false
+date = "2026-09-15T04:38:08.253"
+git_commit = "unknown"
+project = "demo"
+bookmark = false
+julia_version = "1.12.2"
+data_keys = []
+id = "demo/logistic"
+title = "The logistic map, as a model record"
+tags = ["example", "chaos"]
+gallery = "demo/logistic/index.html"
