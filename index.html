@@ -50,6 +50,10 @@
   .pinax-eq{display:block}
   h3.facet{color:#555;margin:1rem 0 .3rem;font-size:1.05rem;font-weight:600}
   .pinax-meta{color:#666;margin:-.4rem 0 1rem;font-size:.95rem}
+  .pinax-stats{display:flex;flex-wrap:wrap;gap:.5rem;margin:-.4rem 0 1.4rem}
+  .pinax-stat{border:1px solid #e1e4e8;border-radius:8px;padding:.45rem .8rem;background:#fafbfc;min-width:5.5rem}
+  .pinax-stat .stat-value{display:block;font-size:1.35rem;font-weight:600;color:#24292f;line-height:1.15}
+  .pinax-stat .stat-label{display:block;font-size:.8rem;color:#57606a}
   .pinax-subtitle{color:#57606a;font-size:.95rem;margin:-.2rem 0 .8rem;font-weight:500}
   .nfig{color:#888;font-weight:normal;font-size:.85em}
   nav .nfig{color:#888}
@@ -94,6 +98,9 @@
 </head><body>
 <h1>archeion-demo</h1>
 <div class="pinax-meta">1 gallery</div>
+<div class="pinax-stats">
+<div class="pinax-stat"><span class="stat-value">1</span><span class="stat-label">records</span></div><div class="pinax-stat"><span class="stat-value">1</span><span class="stat-label">projects</span></div><div class="pinax-stat"><span class="stat-value">3</span><span class="stat-label">figures</span></div><div class="pinax-stat"><span class="stat-value">0</span><span class="stat-label">not reproducible</span></div><div class="pinax-stat"><span class="stat-value">0</span><span class="stat-label">no machine face</span></div>
+</div>
 <div class="pinax-cards">
-<a class="pinax-card" href="demo/logistic/index.html"><div class="card-thumb card-thumb-empty"></div><div class="card-body"><div class="card-title">The logistic map, as a model record</div><div class="card-summary">A generic record, here to show the format: figures with their data, a table, math, and a repro bundle.</div><div class="card-meta">example · chaos  ·  @6811af3+dirty</div></div></a></div>
+<a class="pinax-card" href="demo/logistic/index.html"><div class="card-thumb"><img src="demo/logistic/assets/figures/logistic/orbits/orbits_fig1.svg" alt=""></div><div class="card-body"><div class="card-title">The logistic map, as a model record</div><div class="card-summary">A generic record, here to show the format: figures with their data, a table, math, and a repro bundle.</div><div class="card-sections"><div class="sec-item">Orbits</div><div class="sec-item">Bifurcation</div><div class="sec-item">Decay</div></div><div class="card-meta">demo  ·  2026-09-15  ·  final  ·  3 figures  ·  @340c965</div></div></a></div>
 </body></html>
