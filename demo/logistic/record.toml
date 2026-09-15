@@ -1,7 +1,7 @@
 summary = "A generic record, here to show the format: figures with their data, a table, math, and a repro bundle."
-git_dirty = false
-date = "2026-09-15T04:38:08.253"
-git_commit = "unknown"
+git_dirty = true
+date = "2026-09-15T04:39:39.822"
+git_commit = "6811af372c18c972caf95d6324bbd6b5b9afd8ae"
 project = "demo"
 bookmark = false
 julia_version = "1.12.2"
