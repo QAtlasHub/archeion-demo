@@ -2,14 +2,26 @@
 #
 #     julia tools/selftest.jl
 #
-# A validator that passes a good registry proves little: this copies the registry, breaks it one way
-# at a time, and requires the validator to name each break. Standard library only.
+# A validator that passes a good registry proves little: this builds a fixed fixture, breaks it one
+# way at a time, and requires the validator to name each break. The fixture is the hand-converted
+# first revision of the demo record, on its own: the live registry keeps growing, and a test that
+# read it would change meaning with every deposit. Standard library only.
 
 include(joinpath(@__DIR__, "validate.jl"))
 
 const ROOT = dirname(@__DIR__)
-const REC = only(readdir(joinpath(ROOT, "records", "2026"); join = true))
-const REV = only(readdir(joinpath(REC, "revisions"); join = true))
+const REC = only(filter(d -> endswith(d, "-r_4aehb2y5"), readdir(joinpath(ROOT, "records", "2026"); join = true)))
+const REV = joinpath(REC, "revisions", "20260915T071940Z-3ve4")
+
+# The fixture: projects/, and the demo record with only its first revision and no events.
+function fixture(tmp)
+    cp(joinpath(ROOT, "projects"), joinpath(tmp, "projects"))
+    rec = joinpath(tmp, relpath(REC, ROOT))
+    mkpath(joinpath(rec, "revisions"))
+    cp(joinpath(REC, "record.toml"), joinpath(rec, "record.toml"))
+    cp(REV, joinpath(rec, "revisions", basename(REV)))
+    return rec
+end
 
 failures = String[]
 
@@ -17,9 +29,7 @@ failures = String[]
 # containing `expect`.
 function case(mutate!, name, expect; where = :errors)
     tmp = mktempdir()
-    for d in ("projects", "records")
-        cp(joinpath(ROOT, d), joinpath(tmp, d))
-    end
+    fixture(tmp)
     rec = joinpath(tmp, relpath(REC, ROOT))
     rev = joinpath(tmp, relpath(REV, ROOT))
     mutate!(tmp, rec, rev)
@@ -36,7 +46,12 @@ entry(rev) = joinpath(rev, "entry.toml")
 
 println("validate.jl against deliberately broken copies:")
 
-case("the registry as committed has no errors", nothing) do root, rec, rev end
+let (r, summary) = validate(ROOT)
+    ok = isempty(r.errors)
+    println(ok ? "  pass  " : "  FAIL  ", "the registry as committed has no errors")
+    ok || (push!(failures, "live registry"); foreach(e -> println("          ", e), r.errors))
+end
+case("the fixture has no errors", nothing) do root, rec, rev end
 
 case("a changed payload byte", "does not match its sha256") do root, rec, rev
     edit!(joinpath(rev, "gallery", "index.html"), "<html", "<HTML")
@@ -143,9 +158,7 @@ end
 # Build a copy after `mutate!`; hand the site directory (or the error) to `inspect`.
 function build_case(mutate!, inspect)
     tmp = mktempdir()
-    for d in ("projects", "records")
-        cp(joinpath(ROOT, d), joinpath(tmp, d))
-    end
+    fixture(tmp)
     mutate!(tmp, joinpath(tmp, relpath(REC, ROOT)), joinpath(tmp, relpath(REV, ROOT)))
     result = try
         build(tmp)
@@ -222,9 +235,7 @@ const DOC = (; title = "The logistic map, as a model record", status = "final", 
 # existing record at .registry/bindings/logistic.toml.
 function deposit_case(f)
     tmp = mktempdir()
-    for d in ("projects", "records")
-        cp(joinpath(ROOT, d), joinpath(tmp, d))
-    end
+    fixture(tmp)
     write(joinpath(tmp, ".gitignore"), "_incoming/\n_site/\n")
     for c in (`init -q`, `add -A`, `-c user.name=t -c user.email=t@t commit -qm base`)
         run(`git -C $tmp $c`)
