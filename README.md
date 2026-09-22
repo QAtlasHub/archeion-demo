@@ -9,14 +9,14 @@ store, a PDF): a deposit removes only the files a previous deposit wrote.
 
 ## The registry/1 layout (draft)
 
-`SPEC.md` defines a successor layout, under `projects/` and `records/`. It is a draft, and the
-Archeion 0.3 layout above (`demo/`, `index.html`) stays until the new format has its own build.
+The records under `projects/` and `records/` follow `registry/1`, whose format is `SPEC.md` in
+[Archeion.jl](https://github.com/QAtlasHub/Archeion.jl); `registry.toml` names the version this
+registry is checked with. The Archeion 0.3 layout above (`demo/`, `index.html`) stays until the
+Pages site is switched to the new build.
 
-- `records/2026/2026-09-15-logistic-map-r_4aehb2y5/` is `demo/logistic` converted by hand. Its
-  `entry.toml` says what the conversion could not keep, and claims only that the report can be read.
-- `julia tools/validate.jl .` checks the registry against `SPEC.md`, with the standard library only.
-- `julia tools/selftest.jl` breaks copies of the registry one way at a time and requires the
-  validator to catch each break, then checks the site `build.jl` makes from them.
-- `julia tools/build.jl .` writes the catalogue to `_site/` (not committed). Every link in it is
-  relative, so it can be served from any directory, forwarded over SSH, or opened with `file://`;
-  the build fails if a link does not resolve, and refuses a registry that does not validate.
+- `records/2026/2026-09-15-logistic-map-r_4aehb2y5/` is `demo/logistic`: its first revision was
+  converted by hand, and the later ones were deposited by `scripts/build.jl` through
+  `.registry/bindings/logistic.toml`.
+- `julia -m Archeion validate .` checks the registry; `julia -m Archeion build .` writes the
+  catalogue to `_site/` (not committed), with relative links only, so it can be served from any
+  directory, forwarded over SSH, or opened with `file://`.

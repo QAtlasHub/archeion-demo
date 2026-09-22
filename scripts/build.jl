@@ -6,12 +6,10 @@
 # show what a RECORD and a CATALOGUE look like, so nothing here should come from a study.
 #
 # The deposit goes through `.registry/bindings/logistic.toml`, so every run adds a revision to the
-# same record. Needs Pinax and Plots; the registry tools themselves need only the standard library.
+# same record. Needs Archeion (0.4, as in registry.toml), Pinax and Plots in the active environment.
 
-using Pinax, Plots
+using Archeion, Pinax, Plots
 gr()
-
-include(joinpath(@__DIR__, "..", "tools", "deposit.jl"))
 
 const REPO = dirname(@__DIR__)
 const OUT = mktempdir()
@@ -114,25 +112,12 @@ render(; out = joinpath(OUT, "gallery"))
 render(; theme = :agent, out = joinpath(OUT, "agent"))
 
 # What the entry says comes from the document that was just rendered, not from its output.
-doc = Pinax.current_document()
-ids = Symbol[]
-for pg in doc.pages
-    push!(ids, pg.id)
-    append!(ids, (f.id for f in pg.figures)); append!(ids, (t.id for t in pg.tables))
-    for sec in pg.sections
-        push!(ids, sec.id)
-        append!(ids, (f.id for f in sec.figures)); append!(ids, (t.id for t in sec.tables))
-    end
-end
-
 res = deposit(
     BINDING;
     gallery = joinpath(OUT, "gallery"),
     agent = joinpath(OUT, "agent"),
     source_repo = REPO,
-    doc = (; title = doc.meta.title,
-           status = all(pg.status === :final for pg in doc.pages) ? "final" : "trial",
-           tags = ["example", "chaos"], anchors(ids)...),
+    doc = Archeion.doc_fields(Pinax.current_document(); tags = ["example", "chaos"]),
 )
 println("record:   ", res.record)
 println("revision: ", res.rev, isempty(res.parents) ? " (first)" : " revising " * join(res.parents, ", "))
