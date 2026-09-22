@@ -16,4 +16,7 @@ Archeion 0.3 layout above (`demo/`, `index.html`) stays until the new format has
   `entry.toml` says what the conversion could not keep, and claims only that the report can be read.
 - `julia tools/validate.jl .` checks the registry against `SPEC.md`, with the standard library only.
 - `julia tools/selftest.jl` breaks copies of the registry one way at a time and requires the
-  validator to catch each break.
+  validator to catch each break, then checks the site `build.jl` makes from them.
+- `julia tools/build.jl .` writes the catalogue to `_site/` (not committed). Every link in it is
+  relative, so it can be served from any directory, forwarded over SSH, or opened with `file://`;
+  the build fails if a link does not resolve, and refuses a registry that does not validate.

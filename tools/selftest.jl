@@ -129,5 +129,85 @@ case("an event for a revision that does not exist", "dangling"; where = :warning
     event!(rec, "comment", "20991231T000000Z-zzzz")
 end
 
+# ── build.jl ──────────────────────────────────────────────────────────────────────────────────
+
+include(joinpath(@__DIR__, "build.jl"))
+
+println("build.jl:")
+
+function check(name, ok)
+    println(ok ? "  pass  " : "  FAIL  ", name)
+    ok || push!(failures, name)
+end
+
+# Build a copy after `mutate!`; hand the site directory (or the error) to `inspect`.
+function build_case(mutate!, inspect)
+    tmp = mktempdir()
+    for d in ("projects", "records")
+        cp(joinpath(ROOT, d), joinpath(tmp, d))
+    end
+    mutate!(tmp, joinpath(tmp, relpath(REC, ROOT)), joinpath(tmp, relpath(REV, ROOT)))
+    result = try
+        build(tmp)
+    catch e
+        e
+    end
+    inspect(tmp, result)
+    rm(tmp; recursive = true)
+end
+recpage(root) = read(joinpath(root, "_site", relpath(REC, ROOT), "index.html"), String)
+
+build_case((root, res) -> begin
+    check("builds the registry as committed", res isa NamedTuple && res.records == 1)
+    check("the report is reachable from the record page",
+          isfile(joinpath(root, "_site", relpath(REV, ROOT), "gallery", "index.html")))
+end) do root, rec, rev end
+
+build_case((root, res) -> begin
+    page = recpage(root)
+    check("a second revision becomes the current one on the record page",
+          occursin("current revision 20260916T000000Z-2222", page))
+    check("a comment is shown, with its HTML escaped",
+          occursin("&lt;script&gt;alert(1)&lt;/script&gt;", page) && !occursin("<script>alert", page))
+end) do root, rec, rev
+    second_revision!(rec, rev; parent = true)
+    mkpath(joinpath(rec, "events"))
+    write(joinpath(rec, "events", "20260917T000000Z-loc-aaaa.toml"),
+          "spec = \"registry/1\"\nkind = \"comment\"\nat = 2026-09-17T00:00:00Z\n" *
+          "text = \"<script>alert(1)</script>\"\n[subject]\nrecord = \"r_4aehb2y5\"\n")
+end
+
+build_case((root, res) -> begin
+    check("a yanked only revision shows the record as withdrawn",
+          occursin("withdrawn", recpage(root)) &&
+          occursin("<b>1</b> withdrawn", read(joinpath(root, "_site", "index.html"), String)))
+end) do root, rec, rev
+    event!(rec, "yank", "20260915T071940Z-3ve4")
+end
+
+build_case((root, res) -> begin
+    check("an invalid registry is not built", res isa ErrorException &&
+          occursin("does not validate", res.msg) && !isdir(joinpath(root, "_site")))
+end) do root, rec, rev
+    rm(joinpath(rev, "SHA256SUMS"))
+end
+
+build_case((root, res) -> begin
+    check("a directory build.jl did not write is not replaced", res isa ErrorException &&
+          occursin("refusing to replace", res.msg) && isfile(joinpath(root, "_site", "mine.txt")))
+end) do root, rec, rev
+    mkpath(joinpath(root, "_site"))
+    write(joinpath(root, "_site", "mine.txt"), "keep")
+end
+
+let site = mktempdir()
+    write(joinpath(site, "index.html"), """<a href="missing.html">x</a><img src="/abs.png">""")
+    bad = broken_links(site)
+    check("a broken link and an absolute link in the output are both reported",
+          length(bad) == 2 && any(occursin("does not exist", b) for b in bad) &&
+          any(occursin("sub-path", b) for b in bad))
+    rm(site; recursive = true)
+end
+
 println(isempty(failures) ? "all cases pass" : "$(length(failures)) case(s) failed")
 exit(isempty(failures) ? 0 : 1)
