@@ -1,22 +1,24 @@
 # archeion-demo
 
-An [Archeion](https://github.com/QAtlasHub/Archeion.jl) registry: one directory per record,
-each holding a `record.toml`, the rendered result, and the provenance needed to reproduce it.
+A model registry in the `registry/1` format, whose definition is `SPEC.md` in
+[Archeion.jl](https://github.com/QAtlasHub/Archeion.jl); `registry.toml` names the Archeion version
+this registry is checked and built with. The content is deliberately generic — a logistic map and
+a damped oscillator — so that the page shows what a record and a catalogue look like, not a study.
 
-`index.html` is the catalogue and is regenerated from the tree (`Archeion.reindex`); nothing
-in it is edited by hand. A record directory may also hold sidecars (notes, an annotation
-store, a PDF): a deposit removes only the files a previous deposit wrote.
+The catalogue is served at https://qatlashub.github.io/archeion-demo/. It is built from the tree on
+every push to `master` and is never committed.
 
-## The registry/1 layout (draft)
-
-The records under `projects/` and `records/` follow `registry/1`, whose format is `SPEC.md` in
-[Archeion.jl](https://github.com/QAtlasHub/Archeion.jl); `registry.toml` names the version this
-registry is checked with. The Archeion 0.3 layout above (`demo/`, `index.html`) stays until the
-Pages site is switched to the new build.
-
-- `records/2026/2026-09-15-logistic-map-r_4aehb2y5/` is `demo/logistic`: its first revision was
-  converted by hand, and the later ones were deposited by `scripts/build.jl` through
-  `.registry/bindings/logistic.toml`.
+- `records/2026/2026-09-15-logistic-map-r_4aehb2y5/` is the one record. Its first revision was
+  converted by hand from the Archeion 0.3 layout; the later ones were deposited by
+  `scripts/build.jl` through `.registry/bindings/logistic.toml`.
 - `julia -m Archeion validate .` checks the registry; `julia -m Archeion build .` writes the
-  catalogue to `_site/` (not committed), with relative links only, so it can be served from any
-  directory, forwarded over SSH, or opened with `file://`.
+  catalogue to `_site/`, with relative links only, so it can be served from any directory,
+  forwarded over SSH, or opened with `file://`.
+- Every revision can be checked without any tool: `sha256sum -c SHA256SUMS` inside its directory.
+
+The Archeion 0.3 layout this repository started in (`demo/`, a committed `index.html`) is in the
+git history, and on the `gh-pages` branch that used to serve it.
+
+Merge into `master` with a merge commit, not a squash: revisions name commits of this repository
+as their source, and a squash drops those commits from history. `provenance/spec-v1` keeps the
+ones that PR #1's squash dropped.

@@ -1,0 +1,41 @@
+name: pages
+
+# Publishes the catalogue built from the registry/1 tree. The site is derived and never committed:
+# every push to master rebuilds it with the Archeion version named in registry.toml.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1.12"
+      - name: Install Archeion into a throwaway environment
+        run: julia --startup-file=no -e 'using Pkg; Pkg.activate("archeion-env"); Pkg.add(url="https://github.com/QAtlasHub/Archeion.jl", rev="v0.4.0")'
+      - run: julia --startup-file=no --project=archeion-env -m Archeion build .
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
