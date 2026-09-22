@@ -1,14 +1,21 @@
-# Build the model registry for QAtlasHub/archeion-demo.
+# Build the model record for QAtlasHub/archeion-demo and deposit it as a new revision.
+#
+#     julia scripts/build.jl
 #
 # The content is deliberately generic (a logistic map and a damped oscillator): this page exists to
 # show what a RECORD and a CATALOGUE look like, so nothing here should come from a study.
+#
+# The deposit goes through `.registry/bindings/logistic.toml`, so every run adds a revision to the
+# same record. Needs Pinax and Plots; the registry tools themselves need only the standard library.
 
-using Archeion, Pinax, Plots
+using Pinax, Plots
 gr()
 
+include(joinpath(@__DIR__, "..", "tools", "deposit.jl"))
+
+const REPO = dirname(@__DIR__)
 const OUT = mktempdir()
-const REG = joinpath(homedir(), "registry-demo")
-const REPO = "https://github.com/QAtlasHub/archeion-demo.git"
+const BINDING = joinpath(REPO, ".registry", "bindings", "logistic.toml")
 
 logistic(r, x) = r * x * (1 - x)
 
@@ -64,7 +71,8 @@ fig_decay() = plot(
     xlabel = "t", ylabel = "x(t)", legend = false, lw = 1.4, size = (560, 320),
 )
 
-@pinaxsetup title = "The logistic map, as a model record"
+# `katex = :local` vendors the math assets, so the revision reads with no network.
+@pinaxsetup title = "The logistic map, as a model record" katex = :local
 
 @page :logistic "The logistic map" begin
     @desc md"""
@@ -101,24 +109,32 @@ end
     end
 end
 
-render(; out = OUT)
-# The machine face. Without it the record is a picture a program cannot read, and the registry
-# dashboard counts it under "no machine face" — which is how this line came to be missing.
+render(; out = joinpath(OUT, "gallery"))
+# The machine face. Without it the record is a picture a program cannot read.
 render(; theme = :agent, out = joinpath(OUT, "agent"))
 
-isdir(REG) || Archeion.create_registry(REG; name = "archeion-demo", repo = REPO,
-    description = "A model Archeion registry: one record, rendered by Pinax and deposited here.")
+# What the entry says comes from the document that was just rendered, not from its output.
+doc = Pinax.current_document()
+ids = Symbol[]
+for pg in doc.pages
+    push!(ids, pg.id)
+    append!(ids, (f.id for f in pg.figures)); append!(ids, (t.id for t in pg.tables))
+    for sec in pg.sections
+        push!(ids, sec.id)
+        append!(ids, (f.id for f in sec.figures)); append!(ids, (t.id for t in sec.tables))
+    end
+end
 
-res = Archeion.deposit(
-    OUT;
-    project = "demo",
-    source = "logistic",
-    srcdir = REG,               # the registry carries the script that builds it: scripts/build.jl
-    title = "The logistic map, as a model record",
-    summary = "A generic record, here to show the format: figures with their data, a table, math, and a repro bundle.",
-    root = REG,
-    tags = ["example", "chaos"],
+res = deposit(
+    BINDING;
+    gallery = joinpath(OUT, "gallery"),
+    agent = joinpath(OUT, "agent"),
+    source_repo = REPO,
+    doc = (; title = doc.meta.title,
+           status = all(pg.status === :final for pg in doc.pages) ? "final" : "trial",
+           tags = ["example", "chaos"], anchors(ids)...),
 )
-println("deposited: ", res.dir)
-println("commit:    ", res.commit)
-println("index:     ", res.index)
+println("record:   ", res.record)
+println("revision: ", res.rev, isempty(res.parents) ? " (first)" : " revising " * join(res.parents, ", "))
+println("commit:   ", res.commit, res.pushed ? " (pushed)" : "")
+res.dirty && println("note:     the code had uncommitted changes when it was read")

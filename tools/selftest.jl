@@ -209,5 +209,101 @@ let site = mktempdir()
     rm(site; recursive = true)
 end
 
+# ── deposit.jl ────────────────────────────────────────────────────────────────────────────────
+
+include(joinpath(@__DIR__, "deposit.jl"))
+
+println("deposit.jl:")
+
+const DOC = (; title = "The logistic map, as a model record", status = "final", tags = ["example"],
+             anchors(["logistic", "orbits", "orbits_fig1"])...)
+
+# A copy of the registry that is its own git repository (never pushed), with a binding to the
+# existing record at .registry/bindings/logistic.toml.
+function deposit_case(f)
+    tmp = mktempdir()
+    for d in ("projects", "records")
+        cp(joinpath(ROOT, d), joinpath(tmp, d))
+    end
+    write(joinpath(tmp, ".gitignore"), "_incoming/\n_site/\n")
+    for c in (`init -q`, `add -A`, `-c user.name=t -c user.email=t@t commit -qm base`)
+        run(`git -C $tmp $c`)
+    end
+    run(`git -C $tmp config user.name t`); run(`git -C $tmp config user.email t@t`)
+    binding = joinpath(tmp, ".registry", "bindings", "logistic.toml")
+    mkpath(dirname(binding))
+    write(binding, "spec = \"registry/1\"\nregistry = \"../..\"\nproject = \"p_z7ne42dt\"\n" *
+                   "record = \"r_4aehb2y5\"\nslug = \"logistic-map\"\n")
+    src = (; gallery = joinpath(REV, "gallery"), agent = joinpath(REV, "agent"))
+    try
+        f(tmp, binding, src)
+    finally
+        rm(tmp; recursive = true)
+    end
+end
+commits(tmp) = parse(Int, readchomp(`git -C $tmp rev-list --count HEAD`))
+attempt(f) = try
+    f()
+catch e
+    e
+end
+
+deposit_case() do tmp, binding, src
+    res = deposit(binding; src..., doc = DOC, source_repo = tmp, push = false)
+    r, summary = validate(tmp)
+    check("a deposit through the binding adds a revision whose parent is the previous one",
+          res.parents == ["20260915T071940Z-3ve4"] && isempty(r.errors) &&
+          occursin("current $(res.rev)", only(summary)))
+    changed = split(readchomp(`git -C $tmp show --name-only --format= HEAD`), '\n')
+    check("its commit touches that revision and nothing else",
+          commits(tmp) == 2 && all(startswith(c, relpath(res.dir, tmp)) for c in changed))
+    e = TOML.parsefile(joinpath(res.dir, "entry.toml"))
+    check("the entry takes title and anchors from the document model, not from the output",
+          e["doc"]["title"] == DOC.title && e["anchors"]["local"] == ["orbits_fig1"] &&
+          e["source"]["captured"] == "publish" && length(e["source"]["repo"][1]["commit"]) == 40)
+    check("the render cache's bookkeeping is not carried into the revision",
+          !any(f == ".pinax-manifest.toml" for (_, _, fs) in walkdir(res.dir) for f in fs))
+end
+
+deposit_case() do tmp, binding, src
+    e = attempt(() -> deposit(joinpath(tmp, "nope.toml"); src..., doc = DOC, source_repo = tmp, push = false))
+    check("a deposit without a binding is refused", e isa ErrorException && occursin("no binding", e.msg))
+    e = attempt(() -> new_binding(binding; registry = tmp, project = "p_z7ne42dt", slug = "again"))
+    check("an existing binding is never overwritten", e isa ErrorException && occursin("created once", e.msg))
+end
+
+deposit_case() do tmp, binding, src
+    nb = joinpath(tmp, ".registry", "bindings", "second.toml")
+    id = new_binding(nb; registry = tmp, project = "p_z7ne42dt", slug = "second-question")
+    res = deposit(nb; src..., doc = DOC, source_repo = tmp, push = false)
+    r, summary = validate(tmp)
+    check("a new binding's first deposit creates the record", isempty(r.errors) && length(summary) == 2 &&
+          isfile(joinpath(dirname(dirname(res.dir)), "record.toml")) && res.parents == [])
+end
+
+deposit_case() do tmp, binding, src
+    rec = only(readdir(joinpath(tmp, "records", "2026"); join = true))
+    second_revision!(rec, only(readdir(joinpath(rec, "revisions"); join = true)); parent = false)
+    n = commits(tmp)
+    e = attempt(() -> deposit(binding; src..., doc = DOC, source_repo = tmp, push = false))
+    check("a record in conflict is not deposited into without named parents",
+          e isa ErrorException && occursin("in conflict", e.msg) && commits(tmp) == n)
+end
+
+deposit_case() do tmp, binding, src
+    bad = mktempdir()
+    cp(src.gallery, joinpath(bad, "gallery"))
+    write(joinpath(bad, "gallery", "Index.HTML"), "")        # equal to index.html once lower-cased
+    n = commits(tmp)
+    e = attempt(() -> deposit(binding; gallery = joinpath(bad, "gallery"), agent = src.agent,
+                              doc = DOC, source_repo = tmp, push = false))
+    rec = only(readdir(joinpath(tmp, "records", "2026"); join = true))
+    check("a revision that does not validate is taken back out, and nothing is committed",
+          e isa ErrorException && occursin("taken back out", e.msg) && commits(tmp) == n &&
+          length(readdir(joinpath(rec, "revisions"))) == 1 &&
+          isempty(readdir(joinpath(tmp, "_incoming"))))
+    rm(bad; recursive = true)
+end
+
 println(isempty(failures) ? "all cases pass" : "$(length(failures)) case(s) failed")
 exit(isempty(failures) ? 0 : 1)
