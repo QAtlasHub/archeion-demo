@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The logistic map · The logistic map, as a model record</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><link rel="stylesheet" href="style.css"></head><body>
+<nav class="pinax-top"><a href="index.html">← The logistic map, as a model record</a></nav>
+<h1>The logistic map</h1>
+<div class="pinax-meta">2 figures</div>
+<script type="application/json" id="pinax-committed">{"comments":{},"bookmarks":{},"features":["comments","bookmarks","export"]}</script>
+<section class="page" id="logistic">
+<div class="desc"><p>The map $x_{n+1} = r\,x_n(1-x_n)$ on $[0,1]$. This page exists to show what a record looks like: a figure carries the code that drew it and the numbers behind it, so the catalogue is readable by a person and by a program.</p></div>
+<nav><strong>Contents</strong>
+<a href="#orbits">Orbits <span class="nfig">(1)</span></a>
+<a href="#bifurcation">Bifurcation <span class="nfig">(1)</span></a>
+</nav>
+<section class="section" id="orbits"><h2>Sec. 1. Orbits <span class="nfig">(1)</span></h2>
+<div class="desc"><p>Four orbits from $x_0 = 0.2$, through the period doubling into chaos.</p></div>
+<div class="figgrid">
+<figure id="orbits_fig1">
+<img src="assets/figures/logistic/orbits/orbits_fig1.svg" alt="orbits_fig1">
+<a class="pinax-dl" href="assets/figures/logistic/orbits/orbits_fig1.svg" download title="download orbits_fig1.svg">⤓ download</a>
+<figcaption><b>Fig. 1.</b> Fixed point, 2-cycle, 4-cycle, chaos</figcaption>
+</figure>
+</div>
+</section>
+<section class="section" id="bifurcation"><h2>Sec. 2. Bifurcation <span class="nfig">(1)</span></h2>
+<div class="desc"><p>The attractor as $r$ sweeps $[2.5, 4]$; the accumulation point is near $r \approx 3.5699$.</p></div>
+<div class="figgrid">
+<figure id="bifurcation_fig1">
+<img src="assets/figures/logistic/bifurcation/bifurcation_fig1.png" alt="bifurcation_fig1">
+<a class="pinax-dl" href="assets/figures/logistic/bifurcation/bifurcation_fig1.png" download title="download bifurcation_fig1.png">⤓ download</a>
+<figcaption><b>Fig. 2.</b> 600 values of r, 80 iterates each after 300 discarded &#40;a raster: 48_000 points&#41;</figcaption>
+</figure>
+</div>
+<figure class="pinax-table" id="bifurcation_tbl1"><table>
+<thead><tr><th>r</th><th>behaviour</th></tr></thead>
+<tbody>
+<tr><td>2.9</td><td>fixed point</td></tr>
+<tr><td>3.3</td><td>2-cycle</td></tr>
+<tr><td>3.55</td><td>4-cycle</td></tr>
+<tr><td>3.9</td><td>chaotic</td></tr>
+</tbody></table>
+<figcaption>Where each orbit above sits</figcaption>
+</figure>
+</section>
+</section>
+<script src="app.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script><script>window.addEventListener("load",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}],macros:{},throwOnError:false});});</script></body></html>
