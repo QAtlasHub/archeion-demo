@@ -1,0 +1,120 @@
+ENV["GKSwstype"] = "100"   # headless GR backend for compiling the example gallery
+
+using Pinax
+using Documenter
+using Downloads
+using Literate
+
+const GALLERY_JL = joinpath(@__DIR__, "literate", "gallery.jl")
+
+# The "Examples" page shows the gallery script's source verbatim (plain `julia` blocks, NOT executed).
+# The gallery itself is compiled separately (below); here we EMBED it live at the top of the page via
+# the Documenter bridge (PinaxDocumenterExt) — an auto-resizing `@raw html` <iframe> that shows the
+# rendered gallery AS-IS, right above the source that produced it (dogfood, roadmap 07). The format is
+# defined once and shared with `makedocs`, so `documenter_embed` resolves the site-root `gallery/`
+# against `examples.md` via `html_fmt.prettyurls` — correct on the deployed site AND a local build.
+const html_fmt = Documenter.HTML(;
+    # Measured 2026-09-03: the previous host does not resolve at all (000). This one serves
+    # `/dev/` with 200; `/stable/` is 404 until a version is tagged, and is still the right
+    # canonical target because `/dev/` is a moving target.
+    canonical="https://qatlashub.github.io/Pinax.jl/stable/",
+    prettyurls=get(ENV, "CI", "false") == "true",
+    mathengine=MathJax3(
+        Dict(
+            :tex => Dict(
+                :inlineMath => [["\$", "\$"], ["\\(", "\\)"]],
+                :tags => "ams",
+                :packages => ["base", "ams", "autoload", "physics"],
+            ),
+        ),
+    ),
+    assets=["assets/favicon.ico", "assets/custom.css"],
+)
+
+let
+    embed =
+        "\n" * Pinax.documenter_embed(
+            "gallery/", html_fmt; page="examples.md", title="Pinax example gallery"
+        )
+    add_embed = function (content)
+        i = findfirst('\n', content)
+        return if i === nothing
+            content * embed
+        else
+            content[1:i] * embed * content[(i + 1):end]
+        end
+    end
+    Literate.markdown(
+        GALLERY_JL,
+        joinpath(@__DIR__, "src");
+        name="examples",
+        documenter=false,   # plain ```julia fences, not @example
+        execute=false,      # do not run during page generation
+        credit=false,
+        postprocess=add_embed,
+    )
+end
+
+assets_dir = joinpath(@__DIR__, "src", "assets")
+mkpath(assets_dir)
+Downloads.download(
+    "https://github.com/sotashimozono.png", joinpath(assets_dir, "favicon.ico")
+)
+Downloads.download("https://github.com/sotashimozono.png", joinpath(assets_dir, "logo.png"))
+
+makedocs(;
+    sitename="Pinax.jl",
+    format=html_fmt,
+    modules=[Pinax],
+    # Arms the mechanism: a `jldoctest` block whose output stops matching fails the build. Most of
+    # this documentation cannot be doctests — the galleries render to disk and `Pinax.test` runs a
+    # suite — so `docs/literate/gallery.jl` is executed by this file instead, and `test_readme.jl`
+    # executes the Quickstart.
+    doctest=true,
+    pages=[
+        "Home" => "index.md",
+        "Examples" => "examples.md",
+        "Test → Pinax" => "test2pinax.md",
+        "Comments" => "comments.md",
+        "API Reference" => "api.md",
+    ],
+)
+
+# Compile the gallery by RUNNING the script with the build directory as the working directory, so
+# `render(out="gallery")` writes build/gallery/ (a multi-page gallery: index.html of thumbnail cards
+# plus one HTML page per @page) for deploy. A fresh module keeps its definitions out of Main.
+let build = joinpath(@__DIR__, "build")
+    # Pull the precomputed heavy media (the Ising DataVault store + spin gif) off the `media` branch
+    # so the gallery compile reuses it instead of re-running the Monte Carlo (the build-media workflow
+    # keeps `media` up to date). Absent — e.g. media not built yet — the gallery computes it inline.
+    try
+        run(`git fetch --depth=1 origin media`)
+        run(`git --work-tree=$build checkout FETCH_HEAD -- ising_data gallery_media`)
+        run(`git reset -q`)   # keep the restored files in build/, drop them from the index
+        @info "restored Ising media from the `media` branch"
+    catch
+        @info "no `media` branch — the gallery will compute the Ising example inline"
+    end
+    cd(build) do
+        return Base.include(Module(:PinaxGallery), GALLERY_JL)
+    end
+    # Carry a Pinax self-test report into the deployed site (build/test-report/) if the workflow
+    # downloaded one into ../pinax-report-dl/. Nothing produces that artifact yet (#120), so this is
+    # the standing half of the wiring: it is never re-run here, because the report is meant to be a
+    # CI run's own output rather than a second test pass during the docs build.
+    let src = joinpath(@__DIR__, "..", "pinax-report-dl", "pinax-report_html"),
+        dst = joinpath(build, "test-report")
+
+        if isdir(src)
+            cp(src, dst; force=true)
+            @info "carried the Pinax self-test report into build/test-report/"
+        else
+            @info "no Pinax self-test report to carry (CI artifact absent) — the Test → Pinax page says so (#120)"
+        end
+    end
+end
+
+# `versions` is left at Documenter's default. Measured 2026-09-03: with `["stable", "dev"]` the
+# `gh-pages` branch holds `dev`, `previews` and `versions.js` but no `index.html`, so the site root
+# returns 404 and only `/dev/` is reachable.
+deploydocs(; repo="github.com/QAtlasHub/Pinax.jl.git", devbranch="main", push_preview=true)

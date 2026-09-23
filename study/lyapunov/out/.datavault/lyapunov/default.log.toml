@@ -1,0 +1,30 @@
+[provenance]
+julia_version = "1.12.2"
+hostname = "panza"
+
+[meta]
+created_at = "2026-09-22T11:23:06"
+datavault_git_hash = "85f4dc7"
+datavault_version = "0.8.6"
+log_toml_version = 1
+
+[run]
+name = "default"
+
+[layout]
+bin_dir = "bin/lyapunov/default"
+status_dir = "status/lyapunov/default"
+config_snapshot = "data/lyapunov/default/config_snapshot.toml"
+data_dir = "data/lyapunov/default"
+ledger = "data/lyapunov/default/ledger.csv"
+
+[study]
+config = "/home/souta/work/Vault/archeion-demo/study/lyapunov/config.toml"
+project_name = "lyapunov"
+
+[path]
+keys = ["model.r"]
+formatter = "ParamIO.format_path"
+scheme = "default"
+
+    [path.float_precision]

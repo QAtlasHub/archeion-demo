@@ -1,0 +1,15 @@
+[deps]
+Archeion = "4f7774e9-efb7-42d6-b735-122dcc7ea7b8"
+DataVault = "23f5f8f6-b4da-40ee-8c72-c53b6c5de94f"
+LyapunovDemo = "d3ce7208-96cb-48f9-94e9-0f84eb0b43b3"
+ParamIO = "938a3ac2-d340-473c-bcf1-88af577e4ccf"
+Pinax = "e782a80a-1ac9-479e-ba2b-0f3433ef5b4f"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+SweepRunner = "be946ad2-3cb3-4b6e-8f7e-4a5ecc3c255b"
+
+[sources]
+Archeion = {path = "/home/souta/work/Vault/infra/Archeion.jl-seams"}
+DataVault = {path = "/home/souta/work/Vault/infra/DataVault.jl-entry-code"}
+LyapunovDemo = {path = "/home/souta/work/Vault/archeion-demo/study/lyapunov/LyapunovDemo"}
+Pinax = {path = "/home/souta/work/Vault/infra/Pinax.jl-entry-code"}
+SweepRunner = {path = "/home/souta/work/Vault/infra/SweepRunner.jl-entry-code"}
