@@ -1,0 +1,12 @@
+created = 2026-09-23T06:37:38.000Z
+kind = "report"
+project = "8e4b9e18-1920-432e-9c58-eeff153df1a1"
+spec = "registry/2"
+title = "The Lorenz system: the largest Lyapunov exponent across ρ"
+uuid = "f7aab857-57a7-4f6e-8536-fafab00a9942"
+
+[migrated]
+at = 2026-09-23T16:01:47.000Z
+id = "r_t8bs3dk8"
+project = "p_fckzvq96"
+spec = "registry/1"
