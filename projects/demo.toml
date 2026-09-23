@@ -1,0 +1,9 @@
+created = 2026-09-15T07:19:40.000Z
+name = "demo"
+spec = "registry/2"
+uuid = "d1048ffd-bb6e-42a4-9f4c-8a0e8fae1ae8"
+
+[migrated]
+at = 2026-09-23T16:01:47.000Z
+id = "p_z7ne42dt"
+spec = "registry/1"

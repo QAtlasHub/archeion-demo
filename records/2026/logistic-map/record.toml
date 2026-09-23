@@ -1,0 +1,12 @@
+created = 2026-09-15T07:19:40.000Z
+kind = "report"
+project = "d1048ffd-bb6e-42a4-9f4c-8a0e8fae1ae8"
+spec = "registry/2"
+title = "The logistic map, as a model record"
+uuid = "67d8ba04-c694-412c-b339-09418b67d5ec"
+
+[migrated]
+at = 2026-09-23T16:01:47.000Z
+id = "r_4aehb2y5"
+project = "p_z7ne42dt"
+spec = "registry/1"

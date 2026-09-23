@@ -1,4 +1,13 @@
 # What this registry is, for a reader that finds it without its tools.
-spec = "registry/1"                       # the format: SPEC.md in QAtlasHub/Archeion.jl
+spec = "registry/2"                       # the format: SPEC.md in QAtlasHub/Archeion.jl
 name = "archeion-demo"
-implementation = "Archeion.jl v0.5.2"     # the version CI validates and builds with
+implementation = "Archeion.jl v0.6.0"     # the version CI validates and builds with
+uuid = "9199ac13-f6b1-4b37-8f1e-7b71b6422b71"
+
+[projects]
+8e4b9e18-1920-432e-9c58-eeff153df1a1 = { name = "dynamical-models", path = "projects/dynamical-models.toml" }
+d1048ffd-bb6e-42a4-9f4c-8a0e8fae1ae8 = { name = "demo", path = "projects/demo.toml" }
+
+[records]
+67d8ba04-c694-412c-b339-09418b67d5ec = { name = "The logistic map, as a model record", path = "records/2026/logistic-map" }
+f7aab857-57a7-4f6e-8536-fafab00a9942 = { name = "The Lorenz system: the largest Lyapunov exponent across ρ", path = "records/2026/lorenz-lyapunov" }

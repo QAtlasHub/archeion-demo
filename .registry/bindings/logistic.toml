@@ -1,5 +1,5 @@
-spec = "registry/1"
+project = "d1048ffd-bb6e-42a4-9f4c-8a0e8fae1ae8"
+record = "67d8ba04-c694-412c-b339-09418b67d5ec"
 registry = "../.."
-project = "p_z7ne42dt"
-record = "r_4aehb2y5"
 slug = "logistic-map"
+spec = "registry/2"

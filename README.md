@@ -8,9 +8,10 @@ a damped oscillator — so that the page shows what a record and a catalogue loo
 The catalogue is served at https://qatlashub.github.io/archeion-demo/. It is built from the tree on
 every push to `master` and is never committed.
 
-- `records/2026/2026-09-15-logistic-map-r_4aehb2y5/` is the one record. Its first revision was
-  converted by hand from the Archeion 0.3 layout; the later ones were deposited by
-  `scripts/build.jl` through `.registry/bindings/logistic.toml`.
+- `records/2026/logistic-map/` is one of the two records. Its first revision was converted by hand
+  from the Archeion 0.3 layout; the later ones were deposited by `scripts/build.jl` through
+  `.registry/bindings/logistic.toml`. The directory is named, not numbered: identity is the `uuid`
+  inside `record.toml`, and `registry.toml` maps one to the other (`registry/2`, SPEC §2.1).
 - `julia -m Archeion validate .` checks the registry; `julia -m Archeion build .` writes the
   catalogue to `_site/`, with relative links only, so it can be served from any directory,
   forwarded over SSH, or opened with `file://`.
