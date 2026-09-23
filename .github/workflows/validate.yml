@@ -1,7 +1,6 @@
 name: validate
 
-# Thin wrapper: the same command runs locally. The registry's tools are Archeion.jl, pinned here;
-# the version below is the one named in registry.toml.
+# The same commands run locally: nothing here is CI-only. Written by `julia -m Archeion pages`.
 on:
   push:
   pull_request:
@@ -15,6 +14,6 @@ jobs:
         with:
           version: "1.12"
       - name: Install Archeion into a throwaway environment
-        run: julia --startup-file=no -e 'using Pkg; Pkg.activate("archeion-env"); Pkg.add(url="https://github.com/QAtlasHub/Archeion.jl", rev="v0.5.0")'
+        run: julia --startup-file=no -e 'using Pkg; Pkg.activate("archeion-env"); Pkg.add(url="https://github.com/QAtlasHub/Archeion.jl", rev="v0.7.0")'
       - run: julia --startup-file=no --project=archeion-env -m Archeion validate .
       - run: julia --startup-file=no --project=archeion-env -m Archeion build .

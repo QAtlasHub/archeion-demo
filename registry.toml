@@ -1,4 +1,4 @@
 # What this registry is, for a reader that finds it without its tools.
 spec = "registry/1"                       # the format: SPEC.md in QAtlasHub/Archeion.jl
 name = "archeion-demo"
-implementation = "Archeion.jl v0.5.0"     # the version CI validates and builds with
+implementation = "Archeion.jl v0.7.0"     # the version CI validates and builds with
