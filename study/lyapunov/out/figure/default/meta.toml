@@ -1,0 +1,7 @@
+[source]
+git_hash = "abf185b"
+config = "../../../config.toml"
+data_dir = "../../data/default"
+generated_at = "2026-09-22"
+
+[scripts]

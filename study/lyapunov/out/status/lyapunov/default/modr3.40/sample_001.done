@@ -1,0 +1,11 @@
+done_version=2
+jobid=1242206
+completed=2026-09-22T11:23:27
+completed_at=2026-09-22T11:23:27Z
+git_hash=abf185b
+git_commit_observed=abf185b905790c28e89ee395ab9e42cac17f05aa
+git_object_format=sha1
+git_observed_at=completion
+result_sha256=ee114c233a04cb49a03b1cb1f66c5009b3c5f5493b7cb943eb0dab5eb00b201d
+result_file=data/lyapunov/default/modr3.40/data_sample001.jld2
+observation=obs2-20260922T112320Z-12f45e-51e8fa72613fc55b

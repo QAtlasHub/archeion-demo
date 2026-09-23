@@ -1,0 +1,32 @@
+parents = ["20260922T050653Z-6rvm"]
+spec = "registry/1"
+
+[anchors]
+local = ["orbits_fig1", "bifurcation_fig1", "bifurcation_tbl1", "decay_fig1"]
+stable = ["logistic", "orbits", "bifurcation", "oscillator", "decay"]
+
+[doc]
+status = "final"
+tags = ["example", "chaos"]
+title = "The logistic map, as a model record"
+
+[id]
+kind = "report"
+project = "p_z7ne42dt"
+record = "r_4aehb2y5"
+rev = "20260922T060556Z-t8c9"
+
+[preservation]
+level = "read"
+
+[source]
+captured = "publish"
+
+    [[source.repo]]
+    commit = "a332f57701d0237e032e46e8ea7d82ba47af9842"
+    dirty = false
+    role = "render"
+    url = "git@github.com:QAtlasHub/archeion-demo.git"
+
+[time]
+frozen = 2026-09-22T06:05:56.000Z

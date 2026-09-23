@@ -1,0 +1,5 @@
+spec = "registry/1"
+registry = "../.."
+project = "p_z7ne42dt"
+record = "r_4aehb2y5"
+slug = "logistic-map"

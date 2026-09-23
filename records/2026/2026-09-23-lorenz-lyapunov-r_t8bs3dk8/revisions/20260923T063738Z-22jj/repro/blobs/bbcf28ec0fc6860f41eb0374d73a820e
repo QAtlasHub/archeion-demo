@@ -1,0 +1,88 @@
+binding = "loaded-matches-disk"
+binding_reasons = []
+interactive = false
+observation_version = 2
+observed_at = "2026-09-22T11:23:19Z"
+phase = "run-start"
+program_file = ""
+revise_loaded = false
+source = "src1-87e002cd425195eb945c9e21a96dc207e29992e3a99cc3c56a1c8ac20140f38a"
+token = "obs2-20260922T112320Z-12f460-528eca66a6f09f74"
+
+[[code]]
+captures = false
+methods = ["/home/souta/work/Vault/archeion-demo/study/lyapunov/LyapunovDemo/src/LyapunovDemo.jl:28"]
+module = "LyapunovDemo"
+name = "work"
+
+[env]
+JULIA_DEPOT_PATH = "/home/souta/.julia:/home/souta/.julia/juliaup/julia-1.12.2+0.x64.linux.gnu/local/share/julia:/home/souta/.julia/juliaup/julia-1.12.2+0.x64.linux.gnu/share/julia"
+JULIA_LOAD_PATH = "@:@v#.#:@stdlib"
+JULIA_NUM_THREADS = "36"
+JULIA_PROJECT = "/tmp/claude-1003/-home-souta-work-Vault-Registry-master-2/9c048b5e-11af-4a90-a121-21d8bedebc72/scratchpad/lyap2"
+OPENBLAS_NUM_THREADS = "1"
+
+[environment]
+manifest_sha256 = "c249f89e07b5b4976c1377e548a7447f0884a1eb43827425c0598ecc8f71a7da"
+project_sha256 = "42fd6c824952a7ca5ed711f48ae105f998953c63d76a82f4218ab8be553ef1af"
+
+[julia]
+check_bounds = 0
+commit = "ca9b6662be434e718dc97778a25c777c4e277a34"
+fast_math = 0
+image_file = "/home/souta/.julia/juliaup/julia-1.12.2+0.x64.linux.gnu/lib/julia/sys.so"
+opt_level = 2
+threads = 36
+version = "1.12.2"
+
+[process]
+host = "panza"
+myid = 3
+pid = 1242208
+role = "worker"
+
+[[roots]]
+dir = "/home/souta/work/Vault/archeion-demo"
+dirty = "false"
+head = "abf185b905790c28e89ee395ab9e42cac17f05aa"
+kind = "git"
+loaded = "matches"
+loaded_matches_head = "true"
+name = "config"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/work/Vault/infra/Archeion.jl-seams"
+dirty = "false"
+head = "ef7ef781018f27f910a03ebbe9d7597ae5d3506d"
+kind = "git"
+loaded = "matches"
+loaded_matches_head = "true"
+name = "pkg:Archeion:4f7774e9-efb7-42d6-b735-122dcc7ea7b8"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/work/Vault/infra/DataVault.jl-entry-code"
+dirty = "false"
+head = "85f4dc79df496a4a76ae1a71bd213e9fe3f009fc"
+kind = "git"
+loaded = "matches"
+loaded_matches_head = "true"
+name = "pkg:DataVault:23f5f8f6-b4da-40ee-8c72-c53b6c5de94f"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/work/Vault/infra/Pinax.jl-entry-code"
+dirty = "false"
+head = "629e21c1a6b61704ebd0251e8b1c16aa431017ca"
+kind = "git"
+loaded = "matches"
+loaded_matches_head = "true"
+name = "pkg:Pinax:e782a80a-1ac9-479e-ba2b-0f3433ef5b4f"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/work/Vault/infra/SweepRunner.jl-entry-code"
+dirty = "false"
+head = "3910eb9a62178b0f7a4bfc1e45730eed84e594af"
+kind = "git"
+loaded = "matches"
+loaded_matches_head = "true"
+name = "pkg:SweepRunner:be946ad2-3cb3-4b6e-8f7e-4a5ecc3c255b"
+object_format = "sha1"

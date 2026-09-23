@@ -1,0 +1,75 @@
+# Compute, report and deposit the Lyapunov-exponent record, with per-point provenance.
+#
+#     julia --project=<env> scripts/lyapunov.jl [nworkers]
+#
+# The whole chain the registry is the last link of: SweepRunner computes each r on Distributed
+# workers and DataVault stores it, each process observing its own sources at run start; Pinax reads
+# every result once, hashed, and renders; Archeion deposits the report with the table of what it
+# read (SPEC §5.5). The data (`study/lyapunov/out/`) is not committed; the record says what it was.
+#
+# `<env>` needs ParamIO, DataVault (0.8.6+), SweepRunner (0.6.7+), Pinax (0.1.4+), Plots,
+# Archeion (0.4.3+), and `study/lyapunov/LyapunovDemo` developed by path. The work function is
+# that package's, so a worker's observation can vouch for it; the recipe below is defined in this
+# script, which cannot be checked, so the render observation says `unverified`, and why.
+
+using Distributed
+const NWORKERS = isempty(ARGS) ? 2 : parse(Int, ARGS[1])
+NWORKERS > 0 && addprocs(NWORKERS; exeflags="--project=$(Base.active_project())")
+
+using ParamIO, DataVault, SweepRunner, Pinax, Plots, Archeion
+@everywhere using LyapunovDemo
+gr()
+
+const REPO = dirname(@__DIR__)
+const STUDY = joinpath(REPO, "study", "lyapunov")
+const CONFIG = joinpath(STUDY, "config.toml")
+const BINDING = joinpath(REPO, ".registry", "bindings", "lyapunov.toml")
+const OUT = mktempdir()
+
+vault = DataVault.Vault(CONFIG; outdir=joinpath(STUDY, "out"))
+keys = ParamIO.expand(ParamIO.load(CONFIG))
+sweep = SweepRunner.run!(LyapunovDemo.work, vault, keys; load=:LyapunovDemo)
+println("sweep:    ", sweep.done, " computed, ", sweep.skipped, " already done, ", sweep.err, " failed")
+
+function recipe(pairs)
+    rs = [k.params["model.r"] for (k, _) in pairs]
+    λ = [d["lambda"] for (_, d) in pairs]
+    order = sortperm(rs)
+    rs, λ = rs[order], λ[order]
+    @page :lyapunov "The Lyapunov exponent" begin
+        @desc md"""
+        $\lambda(r) = \lim_n \frac1n \sum \log|r(1-2x_i)|$ for the logistic map, one point per
+        value of $r$, each computed by a sweep worker and read back once by the report. Where
+        $\lambda < 0$ the orbit settles on a cycle; where $\lambda > 0$ it is chaotic.
+        """
+        @section :sweep "Across r" begin
+            @figure plot(
+                rs, λ;
+                marker=:circle, ms=3, lw=1, legend=false, xlabel="r", ylabel="λ",
+                size=(640, 340),
+            )
+            @caption "$(length(rs)) values of r; the zero line separates cycles from chaos"
+            @table [[string(r), string(round(l; digits=4))] for (r, l) in zip(rs, λ)] header = [
+                "r", "λ"
+            ] caption = "The points this revision read"
+        end
+    end
+end
+
+report = Pinax.report(vault, recipe; title="The logistic map's Lyapunov exponent", out=OUT)
+
+isfile(BINDING) || Archeion.new_binding(
+    BINDING; registry=REPO, project="p_z7ne42dt", slug="logistic-lyapunov"
+)
+res = deposit(
+    BINDING;
+    gallery=report.gallery,
+    agent=report.agent,
+    source_repo=REPO,
+    doc=Archeion.doc_fields(Pinax.current_document(); tags=["example", "chaos", "sweep"]),
+    provenance=Archeion.provenance_from(vault, report),
+    push=false,
+)
+println("record:   ", res.record)
+println("revision: ", res.rev, isempty(res.parents) ? " (first)" : " revising " * join(res.parents, ", "))
+println("commit:   ", res.commit)

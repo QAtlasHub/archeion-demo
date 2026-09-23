@@ -1,0 +1,12 @@
+id = "src1-dcf36473fa6cf1d5d2c7c474fbc2cf33e8e7b71ddde4ea47180db7f80a665199"
+inventory_complete = true
+materialized = [".jl", ".toml"]
+notes = []
+recipe = "src1"
+
+[[roots]]
+kind = "git"
+name = "config"
+[[roots]]
+kind = "git"
+name = "pkg:Archeion:4f7774e9-efb7-42d6-b735-122dcc7ea7b8"

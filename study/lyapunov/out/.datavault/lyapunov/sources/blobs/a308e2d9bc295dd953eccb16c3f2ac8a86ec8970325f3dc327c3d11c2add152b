@@ -1,0 +1,30 @@
+# The study's code, as a package: a named function in a package is what a worker loads from disk
+# and what DataVault can check against the source snapshot (a function defined in a script cannot
+# be checked, and its observation says so).
+module LyapunovDemo
+
+logistic(r, x) = r * x * (1 - x)
+
+"""
+    lyapunov(r; x0 = 0.2, skip = 1000, n = 20_000) -> Float64
+
+The Lyapunov exponent of the logistic map at `r`: the orbit average of `log|r (1 - 2x)|` after
+`skip` transient iterates. Negative on a stable cycle, positive in chaos.
+"""
+function lyapunov(r; x0=0.2, skip=1000, n=20_000)
+    x = x0
+    for _ in 1:skip
+        x = logistic(r, x)
+    end
+    s = 0.0
+    for _ in 1:n
+        x = logistic(r, x)
+        s += log(abs(r * (1 - 2x)))
+    end
+    return s / n
+end
+
+"The work of one parameter point, for `SweepRunner.run!`."
+work(key) = Dict{String,Any}("lambda" => lyapunov(key.params["model.r"]))
+
+end

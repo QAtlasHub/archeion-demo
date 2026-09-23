@@ -1,0 +1,14 @@
+# lorenz — the largest Lyapunov exponent of the Lorenz system as ρ is swept through the onset of
+# chaos. The physics is DynamicalModels.jl's; this study exists to show what a record looks like
+# when a real package computed it.
+[study]
+project_name  = "lorenz"
+total_samples = 1
+outdir        = "out"
+
+[datavault]
+path_keys = ["model.rho"]
+
+[[paramsets]]
+[paramsets.model]
+rho = [14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 24.74, 26.0, 28.0, 30.0, 35.0, 40.0]

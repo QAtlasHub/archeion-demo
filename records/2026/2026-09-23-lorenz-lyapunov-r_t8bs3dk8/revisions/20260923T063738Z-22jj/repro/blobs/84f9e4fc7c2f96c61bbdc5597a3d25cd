@@ -1,0 +1,12 @@
+# A generic sweep for the provenance demo: the Lyapunov exponent of the logistic map over r.
+[study]
+project_name = "lyapunov"
+total_samples = 1
+outdir = "out"
+
+[datavault]
+path_keys = ["model.r"]
+
+[[paramsets]]
+[paramsets.model]
+r = [2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.45, 3.5, 3.54, 3.56, 3.57, 3.58, 3.6, 3.63, 3.65, 3.7, 3.74, 3.8, 3.83, 3.85, 3.9, 3.95, 4.0]
