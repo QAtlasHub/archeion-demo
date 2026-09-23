@@ -1,0 +1,15 @@
+# Secret-scan config: use gitleaks' default rules, but allowlist the test suite's fake fixture
+# passwords (the auth-flow tests in web/test/*.test.js drive login with throwaway strings — not
+# real secrets). Real credentials live only in gitignored config / env (e.g. deploy.local.toml).
+title = "Archeion"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "test fixtures + example templates — fake/placeholder passwords, not real secrets"
+paths = [
+  '''web/test/.*\.test\.js''',
+  '''test/.*\.jl''',          # Julia test fixtures (e.g. test_agent.jl drives crypto with throwaway passwords)
+  '''.*\.example\.toml''',    # config templates with placeholder creds (archeion.example.toml / deploy.example.toml)
+]

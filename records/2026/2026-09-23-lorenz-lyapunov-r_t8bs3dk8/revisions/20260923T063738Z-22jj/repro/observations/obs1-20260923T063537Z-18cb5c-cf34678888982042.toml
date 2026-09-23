@@ -1,0 +1,48 @@
+binding = "unverified"
+binding_reasons = ["config: no package was loaded from the config's repository, so the study's code is not among what was checked"]
+main_files = ["/cache/build/builder-amdci5-2/julialang/julia-release-1-dot-12/base/sysimg.jl"]
+observation_version = 1
+observed_at = "2026-09-23T06:35:37Z"
+phase = "run-start"
+revise_loaded = false
+source = "src1-7daf46da32d87dd974da1987b4ebf01ae61b1b51c45dcb4f5b41f2458e2bc7b9"
+token = "obs1-20260923T063537Z-18cb5c-cf34678888982042"
+
+[env]
+JULIA_NUM_THREADS = "36"
+
+[environment]
+manifest_sha256 = "b32d82b2f2b3eaabd741c1390b949be0f7d18520aeb7d83d76fce237274e19ec"
+project_sha256 = "1f97979f8f5979abe00588b103a8a2b85c1468da4584290f1778e2b62f8da838"
+
+[julia]
+check_bounds = 0
+commit = "ca9b6662be434e718dc97778a25c777c4e277a34"
+fast_math = 0
+image_file = "/home/souta/.julia/juliaup/julia-1.12.2+0.x64.linux.gnu/lib/julia/sys.so"
+opt_level = 2
+threads = 36
+version = "1.12.2"
+
+[process]
+host = "panza"
+myid = 1
+pid = 1624924
+role = "master"
+
+[[roots]]
+dir = "/home/souta/work/Vault/archeion-demo"
+dirty = "false"
+head = "15b3a3d58eabc0e127d84ba283baab850188b3f2"
+kind = "git"
+loaded = "not-loaded"
+name = "config"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/work/Vault/infra/Archeion.jl-pages"
+dirty = "false"
+head = "99064b44dc1684fb1dea6d4eff5fafb5be4da538"
+kind = "git"
+loaded = "matches"
+name = "pkg:Archeion:4f7774e9-efb7-42d6-b735-122dcc7ea7b8"
+object_format = "sha1"

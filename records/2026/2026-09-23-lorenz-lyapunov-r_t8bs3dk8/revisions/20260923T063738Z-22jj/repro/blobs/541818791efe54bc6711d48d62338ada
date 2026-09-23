@@ -1,0 +1,6 @@
+kind = "report"
+project = "p_fckzvq96"
+record = "r_t8bs3dk8"
+registry = "../.."
+slug = "lorenz-lyapunov"
+spec = "registry/1"

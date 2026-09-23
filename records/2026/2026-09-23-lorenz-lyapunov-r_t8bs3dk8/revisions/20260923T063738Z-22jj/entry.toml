@@ -1,0 +1,33 @@
+parents = []
+spec = "registry/1"
+
+[anchors]
+local = ["sweep_fig1", "sweep_tbl1"]
+stable = ["lorenz", "sweep"]
+
+[doc]
+question = "Where does the Lorenz system become chaotic as ρ is raised?"
+status = "trial"
+tags = ["example", "chaos", "lyapunov", "DynamicalModels.jl"]
+title = "The Lorenz system: the largest Lyapunov exponent across ρ"
+
+[id]
+kind = "report"
+project = "p_fckzvq96"
+record = "r_t8bs3dk8"
+rev = "20260923T063738Z-22jj"
+
+[preservation]
+level = "read"
+
+[source]
+captured = "publish"
+
+    [[source.repo]]
+    commit = "f0cc0e1ab3a015a134681b5368ca1ea9df08164d"
+    dirty = false
+    role = "render"
+    url = "git@github.com:QAtlasHub/archeion-demo.git"
+
+[time]
+frozen = 2026-09-23T06:37:38.000Z

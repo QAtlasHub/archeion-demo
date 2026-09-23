@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The Lorenz system: the largest Lyapunov exponent across ρ</title><link rel="stylesheet" href="assets/katex/katex.min.css"><link rel="stylesheet" href="style.css"></head><body>
+<h1>The Lorenz system: the largest Lyapunov exponent across ρ</h1>
+<div class="pinax-meta">1 figure</div>
+<script type="application/json" id="pinax-committed">{"comments":{},"bookmarks":{},"features":["comments","bookmarks","export"]}</script>
+<nav><strong>Contents</strong>
+<a href="#lorenz">The Lorenz system across ρ <span class="nfig">(1)</span></a>
+<a href="#sweep" style="margin-left:1.2rem">Largest Lyapunov exponent <span class="nfig">(1)</span></a>
+</nav>
+<section class="page" id="lorenz"><h1>The Lorenz system across ρ</h1>
+<div class="desc"><p>$\dot x = \sigma(y-x)$, $\dot y = x(\rho - z) - y$, $\dot z = xy - \beta z$ with $\sigma = 10$ and $\beta = 8/3$. The largest Lyapunov exponent $\lambda_1$ comes from one trajectory per $\rho$ after a warm-up, through <code>DynamicalModels.lyapunov_exponent</code>. Where $\lambda_1 &gt; 0$ nearby trajectories separate: the system is chaotic. The textbook onset for these $\sigma, \beta$ is near $\rho \approx 24.74$.</p></div>
+<section class="section" id="sweep"><h2>Sec. 1. Largest Lyapunov exponent <span class="nfig">(1)</span></h2>
+<div class="figgrid">
+<figure id="sweep_fig1">
+<img src="assets/figures/lorenz/sweep/sweep_fig1.svg" alt="sweep_fig1">
+<a class="pinax-dl" href="assets/figures/lorenz/sweep/sweep_fig1.svg" download title="download sweep_fig1.svg">⤓ download</a>
+<figcaption><b>Fig. 1.</b> λ₁ against ρ; the dashed line is λ₁ &#61; 0</figcaption>
+</figure>
+</div>
+<figure class="pinax-table" id="sweep_tbl1"><table>
+<thead><tr><th>ρ</th><th>λ₁</th><th>verdict</th></tr></thead>
+<tbody>
+<tr><td>14.0</td><td>-0.3948</td><td>not chaotic</td></tr>
+<tr><td>16.0</td><td>-0.3077</td><td>not chaotic</td></tr>
+<tr><td>18.0</td><td>-0.228</td><td>not chaotic</td></tr>
+<tr><td>20.0</td><td>-0.1546</td><td>not chaotic</td></tr>
+<tr><td>22.0</td><td>-0.0864</td><td>not chaotic</td></tr>
+<tr><td>24.0</td><td>0.7628</td><td>chaotic</td></tr>
+<tr><td>24.74</td><td>0.8073</td><td>chaotic</td></tr>
+<tr><td>26.0</td><td>0.8568</td><td>chaotic</td></tr>
+<tr><td>28.0</td><td>0.9029</td><td>chaotic</td></tr>
+<tr><td>30.0</td><td>0.951</td><td>chaotic</td></tr>
+<tr><td>35.0</td><td>1.0449</td><td>chaotic</td></tr>
+<tr><td>40.0</td><td>1.1314</td><td>chaotic</td></tr>
+</tbody></table>
+<figcaption>one trajectory per ρ</figcaption>
+</figure>
+</section>
+</section>
+<script src="app.js"></script><script defer src="assets/katex/katex.min.js"></script><script defer src="assets/katex/contrib/auto-render.min.js"></script><script>window.addEventListener("load",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}],macros:{},throwOnError:false});});</script></body></html>

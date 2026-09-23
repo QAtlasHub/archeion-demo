@@ -1,0 +1,21 @@
+id = "src1-87e002cd425195eb945c9e21a96dc207e29992e3a99cc3c56a1c8ac20140f38a"
+inventory_complete = true
+materialized = [".jl", ".toml"]
+notes = []
+recipe = "src1"
+
+[[roots]]
+kind = "git"
+name = "config"
+[[roots]]
+kind = "git"
+name = "pkg:Archeion:4f7774e9-efb7-42d6-b735-122dcc7ea7b8"
+[[roots]]
+kind = "git"
+name = "pkg:DataVault:23f5f8f6-b4da-40ee-8c72-c53b6c5de94f"
+[[roots]]
+kind = "git"
+name = "pkg:Pinax:e782a80a-1ac9-479e-ba2b-0f3433ef5b4f"
+[[roots]]
+kind = "git"
+name = "pkg:SweepRunner:be946ad2-3cb3-4b6e-8f7e-4a5ecc3c255b"
