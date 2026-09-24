@@ -6,6 +6,7 @@ uuid = "9199ac13-f6b1-4b37-8f1e-7b71b6422b71"
 
 [projects]
 8e4b9e18-1920-432e-9c58-eeff153df1a1 = { name = "dynamical-models", path = "projects/dynamical-models.toml" }
+afa96d7e-4e77-4a09-a7af-73dc5c56e7ca = { name = "wilson-nrg", path = "projects/wilson-nrg.toml" }
 d1048ffd-bb6e-42a4-9f4c-8a0e8fae1ae8 = { name = "demo", path = "projects/demo.toml" }
 
 [records]
