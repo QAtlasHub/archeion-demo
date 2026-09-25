@@ -1,0 +1,10 @@
+[deps]
+DataVault = "23f5f8f6-b4da-40ee-8c72-c53b6c5de94f"
+ParamIO = "938a3ac2-d340-473c-bcf1-88af577e4ccf"
+SweepRunner = "be946ad2-3cb3-4b6e-8f7e-4a5ecc3c255b"
+WilsonNRG = "a92edc93-45ef-4f47-9db6-5fadb6770817"
+
+[sources]
+ParamIO = {rev = "main", url = "https://github.com/QAtlasHub/ParamIO.jl"}
+SweepRunner = {rev = "main", url = "https://github.com/QAtlasHub/SweepRunner.jl"}
+WilsonNRG = {rev = "main", url = "https://github.com/lab-sotashimozono/WilsonNRG.jl"}

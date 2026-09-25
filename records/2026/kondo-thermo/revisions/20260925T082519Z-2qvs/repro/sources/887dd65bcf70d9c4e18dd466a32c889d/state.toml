@@ -1,0 +1,102 @@
+id = "src1-887dd65bcf70d9c4e18dd466a32c889df20db2744f8a5c3d161385334c0be5eb"
+inventory_complete = true
+materialize_limit = 1048576
+materialized = [".jl", ".toml"]
+notes = []
+recipe = "src1"
+
+[[roots]]
+kind = "plain"
+name = "config"
+[[roots]]
+kind = "artifact"
+name = "artifact:Zstd:4db1e58d71ac6bbb35ecc832033264c630d5d3b3"
+tree = "4db1e58d71ac6bbb35ecc832033264c630d5d3b3"
+[[roots]]
+kind = "depot"
+name = "pkg:ChunkCodecCore:0b6fb165-00bc-4d37-ab8b-79f91016dbe1"
+tree = "3496e2b359c27793d12bec54ec94be7983a6ceb2"
+[[roots]]
+kind = "depot"
+name = "pkg:ChunkCodecLibZlib:4c0bbee4-addc-4d73-81a0-b6caacae83c8"
+tree = "d4101e848e8d3f585d61d244c2fe0c80a70e6b3b"
+[[roots]]
+kind = "depot"
+name = "pkg:ChunkCodecLibZstd:55437552-ac27-4d47-9aa3-63184e8fd398"
+tree = "34d9873079e4cb3d0c62926a225136824677073f"
+[[roots]]
+kind = "depot"
+name = "pkg:CommonSolve:38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
+tree = "6c389fa857f6ca5a95474b52a52023fd77f24cb7"
+[[roots]]
+kind = "depot"
+name = "pkg:DataVault:23f5f8f6-b4da-40ee-8c72-c53b6c5de94f"
+tree = "b58bebe9d90b10ed306830801a11ef7bdbeaa45a"
+[[roots]]
+kind = "depot"
+name = "pkg:FileIO:5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+tree = "6621fef488e496356c9c9625d0562c12a6070819"
+[[roots]]
+kind = "depot"
+name = "pkg:JLD2:033835bb-8acc-5ee8-8aae-3f567f8a3819"
+tree = "9ce2e7c49ae4a7035b7d60db3a553b1f6c16875d"
+[[roots]]
+kind = "depot"
+name = "pkg:JLLWrappers:692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
+tree = "7204148362dafe5fe6a273f855b8ccbe4df8173e"
+[[roots]]
+kind = "depot"
+name = "pkg:JSON3:0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+tree = "411eccfe8aba0814ffa0fdf4860913ed09c34975"
+[[roots]]
+kind = "depot"
+name = "pkg:MacroTools:1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+tree = "1e0228a030642014fe5cfe68c2c0a818f9e3f522"
+[[roots]]
+kind = "depot"
+name = "pkg:OrderedCollections:bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+tree = "05f45c2e0de6259db764adbfd2f1dc6d3f8de13c"
+[[roots]]
+kind = "depot"
+name = "pkg:ParamIO:938a3ac2-d340-473c-bcf1-88af577e4ccf"
+tree = "ffcefc00da37b57e4a58626cf5e25f1c220198f3"
+[[roots]]
+kind = "depot"
+name = "pkg:Parsers:69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
+tree = "ba0dc8a8a67cacac4842631f960c046e4e563675"
+[[roots]]
+kind = "depot"
+name = "pkg:PrecompileTools:aea7be01-6a6a-4083-8856-8a6e6704d82a"
+tree = "edbeefc7a4889f528644251bdb5fc9ab5348bc2c"
+[[roots]]
+kind = "depot"
+name = "pkg:Preferences:21216c6a-2e73-6563-6e65-726566657250"
+tree = "5005266de4bfe50e53ff44a5cb5c540b6e47a254"
+[[roots]]
+kind = "depot"
+name = "pkg:Requires:ae029012-a4dd-5104-9daa-d747884805df"
+tree = "62389eeff14780bfe55195b7204c0d8738436d64"
+[[roots]]
+kind = "depot"
+name = "pkg:ScopedValues:7e506255-f358-4e82-b7e4-beb19740aa63"
+tree = "67a144433c4ce877ee6d1ada69a124d6b1ecf7be"
+[[roots]]
+kind = "depot"
+name = "pkg:SlurmClusterManager:c82cd089-7bf7-41d7-976b-6b5d413cbe0a"
+tree = "0689bbb1a914b979cf01419c7d8b553425ba18e9"
+[[roots]]
+kind = "depot"
+name = "pkg:StructTypes:856f2bd8-1eba-4b0a-8007-ebc267875bd4"
+tree = "159331b30e94d7b11379037feeb9b690950cace8"
+[[roots]]
+kind = "depot"
+name = "pkg:SweepRunner:be946ad2-3cb3-4b6e-8f7e-4a5ecc3c255b"
+tree = "34e9080deab3332034d74b8d5720ca75e129367c"
+[[roots]]
+kind = "depot"
+name = "pkg:WilsonNRG:a92edc93-45ef-4f47-9db6-5fadb6770817"
+tree = "d1eabe910bf94b62dbb6e283fafbf821f4a4e174"
+[[roots]]
+kind = "depot"
+name = "pkg:Zstd_jll:3161d3a3-bdf6-5164-811a-617609db77b4"
+tree = "446b23e73536f84e8037f5dce465e92275f6a308"

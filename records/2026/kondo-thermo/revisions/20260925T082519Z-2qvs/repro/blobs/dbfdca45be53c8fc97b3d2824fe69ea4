@@ -1,0 +1,6 @@
+docs/build/
+docs/refs/
+harness.toml
+.harness/
+Manifest.toml
+test/.ci-out/

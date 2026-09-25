@@ -1,0 +1,17 @@
+allow_mismatch = false
+missing_observations = []
+observations = ["obs1-20260925T082348Z-2e3bf8-37b353e031bcca5f", "obs1-20260925T082510Z-2e4089-e300abb3122f67c2"]
+points = 5
+points_digest = "sha256:8368048e9c06263727b7d290f3dd949945a67d09644dafe3e0d3dcbb0301fcd1"
+points_file = "provenance/points.tsv"
+render_observation = "obs1-20260925T082510Z-2e4089-e300abb3122f67c2"
+schema = "registry.provenance/1"
+source_contents = true
+
+[bindings]
+unverified = 5
+
+[counts]
+read_differs_from_result = 0
+read_matches_result = 5
+result_unknown = 0

@@ -1,0 +1,44 @@
+# kondo-thermo, the computation: impurity entropy and susceptibility of the symmetric Anderson
+# model at each U/Γ, stored point by point in a DataVault. Nothing here renders or publishes, so
+# that a recomputation from a revision (`julia -m Archeion verify`) runs exactly this and nothing
+# else; `report/report.jl` renders and deposits.
+#
+#     julia --project=. compute.jl
+#
+# The output directory comes from `config.toml`, or from DATAVAULT_OUTDIR when that is set (a
+# verification points it at a fresh directory), so it is not passed here.
+
+using ParamIO, DataVault, SweepRunner
+using WilsonNRG
+
+const CONFIG = joinpath(@__DIR__, "config.toml")
+
+# The same scheme for every point; only U changes. EnergyCut, not KeepN: a fixed KeepN
+# under-resolves the impurity-doubled run (WilsonNRG's test/gates/test_thermo.jl).
+const ALG = NRGAlgorithm(;
+    discretization=WilsonLog(2.0), symmetry=U1U1(), truncation=EnergyCut(6.0), nsites=18
+)
+
+function work(key)
+    r = key.params["model.u_over_gamma"]
+    Γ = key.params["model.gamma"]
+    U = r * Γ
+    th = thermodynamics(AndersonModel(; U, εd=-U / 2, Γ, D=1.0), ALG; betabar=1.0)
+    return Dict{String,Any}(
+        "u_over_gamma" => r,
+        "gamma" => Γ,
+        "T" => collect(th.T),
+        "S_imp" => collect(th.S_imp),
+        "Tchi_imp" => collect(th.Tχ_imp),
+    )
+end
+
+function main()
+    vault = DataVault.Vault(CONFIG; run="sweep")
+    keys = ParamIO.expand(ParamIO.load(CONFIG))
+    res = SweepRunner.run!(work, vault, keys; opts=RunOpts(; workers=:sequential))
+    @info "swept" computed = res.done skipped = res.skipped failed = res.err
+    return nothing
+end
+
+isinteractive() || main()

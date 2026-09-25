@@ -1,0 +1,121 @@
+        - #
+        - # BufferedIO
+        - #
+        - 
+        - mutable struct BufferedWriter{io} <: MemoryBackedIO
+        0     f::io
+        -     buffer::Vector{UInt8}
+        -     file_position::Int64
+        -     curptr::Ptr{Nothing}
+        -     extensible::Bool
+        - end
+        - 
+        0 function BufferedWriter(io, buffer_size::Integer = 0; extensible::Bool=false)
+        0     pos = position(io)
+        0     skip(io, buffer_size)
+        0     buf = Vector{UInt8}(undef, buffer_size)
+        0     BufferedWriter(io, buf, Int64(pos), Ptr{Nothing}(pointer(buf)), extensible)
+        - end
+        - Base.show(io::IO, ::BufferedWriter) = print(io, "BufferedWriter")
+        - 
+        - function ensureroom(io::BufferedWriter, n::Integer)
+        0     if bufferpos(io) + n > length(io.buffer)
+        0         if io.extensible
+        0             pos = bufferpos(io)
+        0             resize!(io.buffer, length(io.buffer) + n)
+        0             io.curptr = pointer(io.buffer, pos+1)
+        -         else
+        0             throw(InternalError("BufferedWriter: not enough room"))
+        -         end
+        -     end
+        - end
+        - 
+        - Base.position(io::BufferedWriter) = io.file_position + bufferpos(io)
+        - 
+        - function Base.seek(io::BufferedWriter, offset::Integer)
+        -     buffer_offset = offset - io.file_position
+        -     buffer_offset < 0 && throw(ArgumentError("cannot seek before start of buffer"))
+        -     ensureroom(io, buffer_offset - bufferpos(io))
+        -     io.curptr = pointer(io.buffer) + buffer_offset
+        - end
+        - 
+        - function finish!(io::BufferedWriter)
+        0     bufferpos(io) == length(io.buffer) ||
+        -         throw(InternalError("BufferedWriter: buffer not written to end; position is $(bufferpos(io)) but length is $(length(io.buffer))"))
+        0     seek(io.f, io.file_position)
+        0     jlwrite(io.f, io.buffer)
+        0     nothing
+        - end
+        - 
+        - mutable struct BufferedReader{io} <: MemoryBackedIO
+        0     f::io
+        -     buffer::Vector{UInt8}
+        -     file_position::Int64
+        -     curptr::Ptr{Nothing}
+        - end
+        - 
+        - function BufferedReader(io)
+        0     buf = Vector{UInt8}()
+        0     BufferedReader(io, buf, Int64(position(io)), Ptr{Nothing}(pointer(buf)))
+        - end
+        - 
+        - Base.show(io::IO, ::BufferedReader) = print(io, "BufferedReader")
+        - 
+        0 function ensureroom(io::BufferedReader, n::Integer)
+        0     buf_end = length(io.buffer)
+        0     bufferpos(io) + n > buf_end || return  # already have enough data ahead of cursor
+        0     needed = n - (buf_end - bufferpos(io))
+        0     f = io.f
+        0     sz = _getsize(f)
+        0     amount = min(max(needed, 2^14), sz - position(f))
+        0     amount < needed && throw(EOFError())
+        0     pos = bufferpos(io)
+        0     resize!(io.buffer, buf_end + amount)
+        0     io.curptr = pointer(io.buffer, pos + 1)         # restore after potential realloc
+        0     unsafe_read(f, pointer(io.buffer, buf_end + 1), amount)  # append at end of buffer
+        - end
+        - 
+        - 
+        0 Base.position(io::BufferedReader) = io.file_position + bufferpos(io)
+        - 
+        - """
+        -     bufferpos(io::Union{BufferedReader, BufferedWriter})
+        - 
+        - Get the current position in the buffer.
+        - """
+        0 bufferpos(io::Union{BufferedReader, BufferedWriter}) = Int(io.curptr - pointer(io.buffer))
+        - 
+        - function Base.seek(io::BufferedReader, offset::Integer)
+        0     pos =  offset - io.file_position
+        0     pos < 0 && throw(ArgumentError("cannot seek before start of buffer"))
+        0     ensureroom(io, offset - position(io))
+        0     io.curptr = pointer(io.buffer) + pos
+        0     nothing
+        - end
+        0 finish!(io::BufferedReader) = seek(io.f, io.file_position + bufferpos(io))
+        - 
+        - function truncate_and_close(io::IOStream, endpos::Integer)
+        0     truncate(io, endpos)
+        0     close(io)
+        - end
+        - 
+        - Base.close(::BufferedReader) = nothing
+        - 
+        0 begin_checksum_read(io::IO) = BufferedReader(io)
+        - 
+        - function begin_checksum_write(io::IO, sz::Integer)
+        0     BufferedWriter(io, sz)
+        - end
+        - function end_checksum(io::Union{BufferedReader,BufferedWriter})
+        0     ret = Lookup3.hash(io.buffer, 1, bufferpos(io))
+        0     finish!(io)
+        0     ret
+        - end
+        - 
+        2 function update_checksum(io, chunk_start, chunk_end)
+        2     seek(io, chunk_start)
+        4     cio = begin_checksum_read(io)
+        2     seek(cio, chunk_end)
+        2     seek(io, chunk_end)
+        2     jlwrite(io, end_checksum(cio))
+        - end

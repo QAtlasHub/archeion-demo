@@ -1,0 +1,10 @@
+id = "src1-aa80b939e3e8b4a627502e102fdcf2a6287c54ac07a70bbc36c315a8e9aeeca0"
+inventory_complete = true
+materialize_limit = 1048576
+materialized = [".jl", ".toml"]
+notes = []
+recipe = "src1"
+
+[[roots]]
+kind = "plain"
+name = "config"

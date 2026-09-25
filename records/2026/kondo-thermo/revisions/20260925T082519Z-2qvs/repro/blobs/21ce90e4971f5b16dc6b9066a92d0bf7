@@ -1,0 +1,233 @@
+        - struct ObjectStart
+        4     signature::UInt32
+        -     version::UInt8
+        -     flags::UInt8
+        - end
+        4 ObjectStart(flags::UInt8) = ObjectStart(OBJECT_HEADER_SIGNATURE, 2, flags)
+        - define_packed(ObjectStart)
+        - 
+        - """
+        -     Hmessage{IO}
+        - 
+        - Representation of a Header Message in memory. Provides `getproperty` access
+        - to the fields of the message.
+        - Can also be used to construct and write custom messages.
+        - """
+        - struct Hmessage{IO}
+       20     type::HeaderMessageType
+        -     size::UInt16
+        -     hflags::UInt8
+        -     offset::RelOffset
+        -     payload_offset::RelOffset
+        -     m::Message{IO}
+        - end
+        - 
+       54 function write_header_message(io, vtype::Val{HMT}, hflags::Integer=0x00, size=0; kwargs...) where HMT
+       20     kw = (; kwargs...)
+       20     size = compute_size(vtype, hflags, size, kw)
+       20     jlwrite(io, UInt8(HMT))
+       20     jlwrite(io, UInt16(size))
+       20     jlwrite(io, UInt8(hflags))
+      214     jlwrite(io, vtype, hflags, size, kw)
+       20     nothing
+        - end
+        - 
+        - # Returns size of the actual message + 4 bytes for the type, size, and flags
+       30 jlsizeof(vtype::Val, hflags=0x00, size=0; kwargs...) = 
+        -     compute_size(vtype, hflags, size, (; kwargs...)) + 4
+        - 
+        - struct HmWrap{HM, IOT}
+        -     m::Message{IOT}
+        -     hflags::UInt8
+        -     size::UInt16
+       12     HmWrap(type::HeaderMessageType, hm::Hmessage{IOT}) where IOT =
+        -         new{type,IOT}(hm.m, hm.hflags, hm.size)
+        0     HmWrap(type::HeaderMessageType, m::Message{IOT}) where IOT =
+        -         new{type,IOT}(m, 0x0, 0x0)
+        - end
+        - 
+        4 write_continuation_placeholder(io::IO) = write_header_message(io, Val(HmNil), 0, 16)
+        - 
+        - function Base.show(io::IO, hm::Hmessage)
+        -     println(io, 
+        -      """┌─ Header Message: $(hm.type)
+        -         │ ┌─ offset:\t$(hm.offset)
+        -         │ │  size:\t$(hm.size)
+        -         │ └─ flags:\t$(hm.hflags)""")
+        -     keyvalue = messageshow(Val(hm.type), hm.m, hm.hflags, hm.size)
+        - 
+        -     N = length(keyvalue)
+        -     for n = 1:N
+        -         k, v = keyvalue[n]
+        -         print(io, n < N ? "│    " : "└─   ") 
+        -         println(io, "$k:\t$v")
+        -     end
+        -     if N == 0
+        -         println(io, "└─")
+        -     end
+        - end
+        - 
+        - """
+        -     print_header_messages(f::JLDFile, name::AbstractString)
+        -     print_header_messages(g::Group, name::AbstractString)
+        -     print_header_messages(f::JLDFile, offset::RelOffset)
+        - 
+        - Prints the header messages of a group or dataset in a file.
+        - """
+        - print_header_messages(f::JLDFile, name::AbstractString) = 
+        -     print_header_messages(f.root_group, name)
+        - 
+        - function print_header_messages(g::Group, name::AbstractString)
+        -     g.f.n_times_opened == 0 && throw(ArgumentError("file is closed"))
+        -     (g, name) = pathize(g, name, false)
+        -     roffset = lookup_offset(g, name)
+        -     if roffset == UNDEFINED_ADDRESS
+        -         if isempty(name)
+        -             roffset = g.f.root_group_offset
+        -         else
+        -             throw(ArgumentError("did not find a group or dataset named \"$name\""))
+        -         end
+        -     end
+        -     return print_header_messages(g.f, roffset)
+        - end
+        - 
+        - function print_header_messages(f::JLDFile, offset::RelOffset)
+        -     hmitr = HeaderMessageIterator(f, offset)
+        -     for msg in hmitr
+        -         print(msg)
+        -         if msg.type == HmFilterPipeline
+        -             filter_pipeline = WrittenFilterPipeline(msg)
+        -             @info filter_pipeline
+        -         elseif msg.type == HmAttribute
+        -             attr = read_attribute(f, msg)
+        -             data = read_attr_data(f, attr)
+        -             println("""    data: "$data" """)
+        -         elseif (msg.hflags & 2^3) != 0
+        -             throw(UnsupportedFeatureException())
+        -         end
+        -     end
+        -     nothing
+        - end
+        - 
+       20 function read_header_message(f, io, header_version, chunk_start, groupflags)
+       20     msgpos = h5offset(f, position(io))
+       20     if header_version == 1
+        -         # Message start 8byte aligned relative to object start
+        0         skip_to_aligned!(io, chunk_start)
+        0         msgpos = h5offset(f, position(io))
+        -         # Version 1 header message is padded
+        0         msg = HeaderMessage(HeaderMessageType(jlread(io, UInt16)), jlread(io, UInt16), jlread(io, UInt8))
+        0         skip(io, 3)
+        -     else # header_version == 2
+       20         msg = jlread(io, HeaderMessage)
+       20         (groupflags & 4) == 4 && skip(io, 2) 
+        -     end
+       20     payload_address = position(io)
+       20     payload_offset = h5offset(f, position(io))
+       20     Hmessage(
+        -         msg.msg_type,
+        -         msg.size, msg.flags, msgpos, payload_offset,
+        -         Message(msg.msg_type, payload_address, payload_offset, io))
+        - end
+        - 
+        - """
+        -     mutable struct HeaderMessageIterator{IO}
+        -     HeaderMessageIterator(f::JLDFile, offset::RelOffset)
+        - 
+        - Implements an iterator over header messages.
+        - """
+        - mutable struct HeaderMessageIterator{IOT}
+        4     f::JLDFile{IOT}
+        -     curpos::Int64
+        -     header_version::UInt8
+        -     objflags::UInt8
+        -     chunk::@NamedTuple{chunk_start::Int64, chunk_end::Int64}
+        -     next_chunk::@NamedTuple{chunk_start::Int64, chunk_end::Int64}
+        -     second_to_next_chunk::@NamedTuple{chunk_start::Int64, chunk_end::Int64}
+        - end
+        - 
+        4 function HeaderMessageIterator(f::JLDFile{IOT}, offset::RelOffset) where {IOT}
+        4     io = f.io
+        4     chunk_start::Int64 = fileoffset(f, offset)
+        4     seek(io, chunk_start)
+        -     # Version 1 object header have no signature and start with version
+        4     header_version = jlread(io, UInt8)
+        4     if header_version == 1
+        0         cio = io
+        0         skip(cio, 7)
+        0         sz = jlread(cio, UInt32)
+        0         skip(cio, 4)
+        0         flags = 0x0
+        -     else
+        4         header_version = 0x2
+        4         seek(io, chunk_start)
+        8         cio = begin_checksum_read(io)
+        4         jlread(cio, UInt32) == OBJECT_HEADER_SIGNATURE || throw(InvalidDataException("Invalid Object header signature"))
+        4         jlread(cio, UInt8) == 2 || throw(InvalidDataException("Invalid Object header version"))
+        4         flags = jlread(cio, UInt8)
+        -         # Skip access, modification, change and birth times
+        4         (flags & OH_TIMES_STORED) != 0 && skip(cio, 16)
+        -         # Skip maximum # of attributes fields
+        4         (flags & OH_ATTRIBUTE_PHASE_CHANGE_VALUES_STORED) != 0 && skip(cio, 4)
+        4         sz = read_size(cio, flags)
+        -     end
+        4     chunk = (; chunk_start, chunk_end = position(cio) + sz)
+        4     pos = position(cio)
+        - 
+        4     if header_version == 2
+        -         # Verify correctness now
+        4         seek(cio, chunk.chunk_end)
+        4         end_checksum(cio) == jlread(io, UInt32)
+        4         seek(io, pos)
+        -     end
+        - 
+        4     HeaderMessageIterator{IOT}(
+        -         f, pos, header_version, flags,
+        -         chunk, (; chunk_start = -1, chunk_end = -1), (; chunk_start = -1, chunk_end = -1))
+        - end
+        -     
+        - Base.IteratorSize(::HeaderMessageIterator) = Base.SizeUnknown()
+        - 
+       24 function Base.iterate(itr::HeaderMessageIterator{IO}, state=nothing) where IO
+       28     io = itr.f.io
+       24     chunk = itr.chunk
+       24     if itr.curpos > chunk.chunk_end
+        0         throw(InternalError("This should not happen"))
+       24     elseif itr.curpos > (chunk.chunk_end - 4 - 2*((itr.objflags & 4) == 4))
+        4         if itr.next_chunk.chunk_start == -1
+        4             return nothing
+        -         end
+        0         itr.chunk = chunk = itr.next_chunk
+        0         itr.next_chunk = itr.second_to_next_chunk
+        0         itr.second_to_next_chunk = (; chunk_start=-1, chunk_end=-1)
+        - 
+        0         seek(io, chunk.chunk_start)
+        0         if itr.header_version == 2
+        -             # Verify integrity of new chunk
+        0             cio = begin_checksum_read(io)
+        0             jlread(cio, UInt32) == OBJECT_HEADER_CONTINUATION_SIGNATURE || throw(InvalidDataException())
+        0             seek(cio, chunk.chunk_end-4)
+        0             end_checksum(cio) == jlread(io, UInt32)
+        0             seek(io, chunk.chunk_start + 4)
+        0             chunk = itr.chunk = (; chunk.chunk_start, chunk_end=chunk.chunk_end-4)
+        -         end        
+        0         itr.curpos = position(io)
+        -     end
+       20     seek(io, itr.curpos)
+       20     msg = read_header_message(itr.f, io, itr.header_version, chunk.chunk_start, itr.objflags)::Hmessage{IO}
+       20     itr.curpos = fileoffset(itr.f, msg.payload_offset)+msg.size
+       20     if msg.type == HmObjectHeaderContinuation
+        0         wmsg = HmWrap(HmObjectHeaderContinuation, msg)
+        0         chunk_start = fileoffset(itr.f, wmsg.continuation_offset::RelOffset)
+        0         chunk_end = chunk_start + wmsg.continuation_length::Int64
+        0         new_chunk =  (; chunk_start, chunk_end)
+        0         if itr.next_chunk.chunk_start == -1
+        0             itr.next_chunk = new_chunk
+        0         elseif itr.second_to_next_chunk.chunk_start == -1
+        0             itr.second_to_next_chunk = new_chunk
+        -         else
+        0             throw(InternalError("This should not happen"))
+        -         end
+        -     end
+       20     return msg, nothing
+        - end

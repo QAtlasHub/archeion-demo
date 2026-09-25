@@ -1,0 +1,8 @@
+name: Format Check
+
+# No `paths:` filter. A filtered required check never runs on a pull request that touches no
+# `.jl` file, and a required check that never runs stays pending forever: the pull request
+# becomes unmergeable rather than exempt. `format / format-check` IS required on this
+# repository's `main`, so restoring the filter would cost exactly that.
+on: { pull_request: {} }
+jobs: { format: { uses: QAtlasHub/.github/.github/workflows/format-check.yml@main } }

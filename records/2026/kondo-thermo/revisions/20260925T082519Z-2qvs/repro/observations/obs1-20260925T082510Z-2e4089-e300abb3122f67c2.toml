@@ -1,0 +1,46 @@
+binding = "unverified"
+binding_reasons = ["config: no package was loaded from the config's repository, so the study's code is not among what was checked"]
+main_files = ["/cache/build/builder-amdci5-2/julialang/julia-release-1-dot-12/base/sysimg.jl"]
+observation_version = 1
+observed_at = "2026-09-25T08:25:09Z"
+phase = "render"
+program = "/home/souta/work/Vault/studies/kondo-thermo/report/report.jl"
+revise_loaded = false
+source = "src1-aa80b939e3e8b4a627502e102fdcf2a6287c54ac07a70bbc36c315a8e9aeeca0"
+token = "obs1-20260925T082510Z-2e4089-e300abb3122f67c2"
+
+[env]
+JULIA_NUM_THREADS = "36"
+
+[environment]
+manifest_sha256 = "b81ede2923ed23423dcba866297cd7a7d29b3ee11ebdb1a41bcb6dbb3e1060c6"
+project_sha256 = "bb5d520f342eb2d230700f200fa2f816611e94ec3d352bee8d5552fdb4e4a181"
+
+[julia]
+bindir = "/home/souta/.julia/juliaup/julia-1.12.2+0.x64.linux.gnu/bin"
+blas_libraries = ["libopenblas64_.so"]
+blas_threads = 18
+check_bounds = 0
+commit = "ca9b6662be434e718dc97778a25c777c4e277a34"
+cpu_name = "skylake-avx512"
+executable_sha256 = "4f5adc0267a6a766939cfe2db5978fc79ed2605d0eb6c82fd9f3c5520c07b382"
+fast_math = 0
+image_file = "/home/souta/.julia/juliaup/julia-1.12.2+0.x64.linux.gnu/lib/julia/sys.so"
+opt_level = 2
+platform = "x86_64-linux-gnu-libgfortran5-cxx11-libstdcxx30-julia_version+1.12.2"
+threads = 36
+version = "1.12.2"
+
+[process]
+host = "panza"
+pid = 3031177
+role = "render"
+
+[[roots]]
+dir = "/home/souta/work/Vault/studies/kondo-thermo"
+dirty = "unknown"
+head = "unknown"
+kind = "plain"
+loaded = "not-loaded"
+name = "config"
+object_format = "unknown"

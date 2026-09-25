@@ -1,0 +1,26 @@
+name: Publish Release
+
+# The notes builder moved to QAtlasHub/.github/actions/release-notes, which carries the same
+# `build_release_notes.py` this repository used to keep in `.github/scripts/`.
+on: { push: { tags: ['v*'] }, workflow_dispatch: { inputs: { tag: { description: tag, required: true } } } }
+
+permissions:
+  contents: write
+  # NOT inherited from the action, and not optional. The notes builder reads merged PRs through
+  # `gh pr list --search`, which resolves over the GraphQL search connection. A `permissions:`
+  # block REPLACES rather than adds, so `contents: write` alone leaves the job with no read
+  # access to pull requests and every node comes back as
+  # `Resource not accessible by integration (search.nodes.0)`. That failure was diagnosed and
+  # fixed in this repository (#33); dropping this line while adopting the shared action would
+  # reintroduce it.
+  pull-requests: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }   # the builder needs history to find the previous tag
+      - uses: QAtlasHub/.github/actions/release-notes@v1
+        with:
+          tag: ${{ inputs.tag || github.ref_name }}
