@@ -1,0 +1,24 @@
+at = 2026-09-25T08:28:47.000Z
+capability = "compute"
+criterion = "result-file-sha256"
+kind = "capability.verified"
+matched = 5
+observations = ["obs1-20260925T082348Z-2e3bf8-37b353e031bcca5f"]
+points = 5
+spec = "registry/2"
+
+[conditions]
+blas_threads = 18
+depot = "restored-only"
+executable_sha256 = "4f5adc0267a6a766939cfe2db5978fc79ed2605d0eb6c82fd9f3c5520c07b382"
+home = "empty"
+host = "panza"
+julia_as_recorded = true
+julia_version = "1.12.2"
+network = "unshared"
+not_held = 0
+threads = 36
+
+[subject]
+record = "2a55ada6-d482-4566-aca7-fb4ce8dc0197"
+rev = "20260925T082519Z-2qvs"
