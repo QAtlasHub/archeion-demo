@@ -1,0 +1,48 @@
+name: deposit
+
+# Merges a deposit's pull request when the registry checks it: the tree validates and the change
+# only adds to it. Written by `julia -m Archeion pages --automerge=true`; run that again when the
+# version changes.
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: deposit-merge
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: startsWith(github.head_ref, 'deposit/') && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1.12"
+      - name: Install Archeion into a throwaway environment
+        run: julia --startup-file=no -e 'using Pkg; Pkg.activate("archeion-env"); Pkg.add(url="https://github.com/QAtlasHub/Archeion.jl", rev="v0.8.12")'
+      - name: The tree is well formed
+        run: julia --startup-file=no --project=archeion-env -m Archeion validate .
+      - name: Nothing already in it was touched
+        run: julia --startup-file=no --project=archeion-env -m Archeion additions . --base=origin/${{ github.base_ref }}
+      - name: Merge the commit that was checked
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh pr merge ${{ github.event.pull_request.number }} --merge
+          --match-head-commit ${{ github.event.pull_request.head.sha }}
+          --repo ${{ github.repository }}
+      - name: Rebuild the site from what was merged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref master --repo ${{ github.repository }}
