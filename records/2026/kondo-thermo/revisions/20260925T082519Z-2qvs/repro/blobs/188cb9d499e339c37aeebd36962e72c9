@@ -1,0 +1,82 @@
+        - # core/load.jl — config TOML の読み込みと継承マージ
+        - 
+        - """
+        -     load(path; inherit=true) -> ConfigSpec
+        - 
+        - Read a TOML config and return a `ConfigSpec`.
+        - If `[base] inherit = "..."` is present, merge the parent file first
+        - (parent `[[paramsets]]` come first in the union).
+        - 
+        - The optional `[datavault] sweep_order` key may be set in the TOML to
+        - override the default sweep enumeration order (which is `path_keys`).
+        - """
+        2 function load(path::AbstractString; inherit::Bool=true)::ConfigSpec
+        1     raw = _load_raw(path, inherit, String[])
+        - 
+        1     study_tbl = get(raw, "study", Dict{String,Any}())
+        1     study = StudySpec(
+        -         get(study_tbl, "project_name", "unnamed"),
+        -         get(study_tbl, "total_samples", 1),
+        -         get(study_tbl, "outdir", "out"),
+        -     )
+        - 
+        1     raw_paramsets = get(raw, "paramsets", Vector{Dict{String,Any}}())
+        1     flat_blocks = [_flatten_block(b) for b in raw_paramsets]
+        - 
+        2     if haskey(raw, "datavault") && haskey(raw["datavault"], "path_keys")
+        1         path_keys = convert(Vector{String}, raw["datavault"]["path_keys"])
+        1         _validate_path_keys(path_keys, flat_blocks)
+        -     else
+        0         path_keys = resolve_path_keys(flat_blocks)
+        -     end
+        - 
+        -     # Optional explicit sweep_order
+        2     sweep_order = if haskey(raw, "datavault") && haskey(raw["datavault"], "sweep_order")
+        0         convert(Vector{String}, raw["datavault"]["sweep_order"])
+        -     else
+        2         String[]
+        -     end
+        - 
+        -     # Optional float path-segment format: "fixed2" (default, legacy %.2f) or
+        -     # "auto" (content-aware, per-axis injective+lossless). Additive; unset ⇒ fixed2.
+        2     float_format = if haskey(raw, "datavault") && haskey(raw["datavault"], "float_format")
+        0         ff = String(raw["datavault"]["float_format"])
+        0         ff in ("fixed2", "auto") || error(
+        -             "ParamIO.load: [datavault] float_format = $(repr(ff)) is invalid; " *
+        -             "expected \"fixed2\" or \"auto\".",
+        -         )
+        0         ff
+        -     else
+        2         "fixed2"
+        -     end
+        - 
+        1     artifacts = _parse_artifacts(raw, flat_blocks)
+        - 
+        1     return ConfigSpec(study, path_keys, flat_blocks, sweep_order, float_format, artifacts)
+        - end
+        - 
+        - """
+        -     _load_raw(path, inherit, chain) -> Dict{String,Any}
+        - 
+        - Parse the TOML at `path`, **recursively** merging `[base] inherit` parents so
+        - multi-level (grandparent and deeper) chains compose correctly. `chain` tracks
+        - the absolute paths visited so far and is used to detect inheritance cycles.
+        - """
+        1 function _load_raw(
+        -     path::AbstractString, inherit::Bool, chain::Vector{String}
+        - )::Dict{String,Any}
+        1     apath = abspath(path)
+        1     if apath in chain
+        0         error(
+        -             "ParamIO.load: circular [base] inherit detected: " *
+        -             join(vcat(chain, apath), " -> "),
+        -         )
+        -     end
+        1     raw = TOML.parsefile(path)
+        2     if inherit && haskey(raw, "base") && haskey(raw["base"], "inherit")
+        0         parent_path = joinpath(dirname(path), raw["base"]["inherit"])
+        0         parent_raw = _load_raw(parent_path, inherit, vcat(chain, apath))
+        0         raw = _merge_configs(parent_raw, raw)
+        -     end
+        1     return raw
+        - end

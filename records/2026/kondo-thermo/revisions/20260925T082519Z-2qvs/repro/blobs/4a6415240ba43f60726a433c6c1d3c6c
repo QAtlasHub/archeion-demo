@@ -1,0 +1,241 @@
+        - #
+        - # MmapIO
+        - #
+        - # An IO built on top of mmap to avoid the overhead of ordinary disk IO
+        - if Sys.iswindows()
+        -     const MMAP_GROW_SIZE = 2^19
+        -     const FILE_GROW_SIZE = 2^19
+        - else
+        -     const MMAP_GROW_SIZE = 2^24
+        -     const FILE_GROW_SIZE = 2^18
+        - end
+        - 
+        - mutable struct MmapIO <: MemoryBackedIO
+        4     f::IOStream
+        -     write::Bool
+        -     n::Int
+        -     startptr::Ptr{Cvoid}
+        -     curptr::Ptr{Cvoid}
+        -     endptr::Ptr{Cvoid}
+        -     @static if Sys.iswindows()
+        -         mapping::Ptr{Cvoid}
+        -     end
+        -     # The following two fields used to be global constants but
+        -     # that breaks concurrent writes on separate threads
+        -     checksum_pos::Vector{Int64}
+        -     nchecksum::Int64
+        - end
+        - 
+        - if Sys.isunix()
+        -     function mmap!(io::MmapIO, n::Int)
+        4         oldptr = io.startptr
+        4         newptr = ccall(:jl_mmap, Ptr{Cvoid}, (Ptr{Cvoid}, Csize_t, Cint, Cint, Cint, Int64),
+        -                        C_NULL, n, Mmap.PROT_READ | (io.write*Mmap.PROT_WRITE),
+        -                        Mmap.MAP_SHARED, fd(io.f), 0)
+        4         systemerror("mmap", newptr == Ptr{Nothing}(-1))
+        4         io.n = n
+        4         io.curptr += newptr - oldptr
+        4         io.startptr = newptr
+        -     end
+        - 
+        4     munmap(io::MmapIO) =
+        -         systemerror("munmap",
+        -                     ccall(:munmap, Cint, (Ptr{Cvoid}, Int), io.startptr, io.n) != 0)
+        - 
+        -     function msync(io::MmapIO, offset::Integer=0, len::Integer=UInt(io.endptr - io.startptr),
+        -                    invalidate::Bool=false)
+        -         # shift `offset` to start of page boundary
+        6         offset_page::Int64 = div(offset, Mmap.PAGESIZE) * Mmap.PAGESIZE
+        -         # add (offset - offset_page) to `len` to get total length of memory-mapped region
+        2         mmaplen::Int64 = (offset - offset_page) + len
+        -         # Edge case: calling msync with 0 mmaplen fails on mac
+        2         mmaplen == 0 && return nothing
+        2         systemerror("msync",
+        -                     ccall(:msync, Cint, (Ptr{Cvoid}, Csize_t, Cint),
+        -                           io.startptr + offset_page, mmaplen,
+        -                           invalidate ? Mmap.MS_INVALIDATE : Mmap.MS_SYNC) != 0)
+        -     end
+        - elseif Sys.iswindows()
+        -     const DWORD = Culong
+        -     function mmap!(io::MmapIO, n::Int)
+        -         oldptr = io.startptr
+        -         mapping = ccall(:CreateFileMappingW, stdcall, Ptr{Cvoid},
+        -                         (Base.Libc.WindowsRawSocket, Ptr{Cvoid}, DWORD, DWORD, DWORD, Ptr{Cvoid}),
+        -                         Mmap.gethandle(io.f), C_NULL,
+        -                         io.write ? Mmap.PAGE_READWRITE : Mmap.PAGE_READONLY, n >> 32,
+        -                         n % UInt32, C_NULL)
+        -         systemerror("CreateFileMappingW", mapping == C_NULL)
+        -         newptr = ccall(:MapViewOfFile, stdcall, Ptr{Cvoid},
+        -                        (Ptr{Cvoid}, DWORD, DWORD, DWORD, Csize_t),
+        -                         mapping, io.write ? Mmap.FILE_MAP_WRITE : Mmap.FILE_MAP_READ, 0, 0,
+        -                         n)
+        -         systemerror("MapViewOfFile", newptr == C_NULL)
+        -         io.n = n
+        -         io.curptr += newptr - oldptr
+        -         io.mapping = mapping
+        -         io.startptr = newptr
+        -     end
+        - 
+        -     function munmap(io::MmapIO)
+        -         systemerror("UnmapViewOfFile",
+        -                     ccall(:UnmapViewOfFile, stdcall, Cint, (Ptr{Cvoid},), io.startptr) == 0)
+        -         systemerror("CloseHandle",
+        -                     ccall(:CloseHandle, stdcall, Cint, (Ptr{Cvoid},), io.mapping) == 0)
+        -     end
+        - 
+        -     function msync(io::MmapIO, offset::Integer=0, len::Integer=UInt(io.endptr - io.startptr),
+        -                    invalidate::Bool=false)
+        -         # shift `offset` to start of page boundary
+        -         offset_page::Int64 = div(offset, Mmap.PAGESIZE) * Mmap.PAGESIZE
+        -         # add (offset - offset_page) to `len` to get total length of memory-mapped region
+        -         mmaplen::Int64 = (offset - offset_page) + len
+        -         systemerror("FlushViewOfFile",
+        -                     ccall(:FlushViewOfFile, stdcall, Cint,
+        -                           (Ptr{Cvoid}, Csize_t), io.startptr + offset_page, mmaplen) == 0)
+        -     end
+        - end
+        - 
+        4 function MmapIO(fname::AbstractString, write::Bool, create::Bool, truncate::Bool)
+        4     truncate && !write && throw(ArgumentError("cannot truncate file that is not writable"))
+        - 
+        4     f = open(fname, read = true, write = write,
+        -              create = create, truncate = truncate, append = false)
+        6     initialsz = truncate ? Int64(0) : filesize(fname)
+        -     @static if Int == Int32
+        -         initialsz > typemax(Int) && error("cannot read a file greater than 2GB on a 32-bit system")
+        -     end
+        4     n = (initialsz % Int) + (write ? MMAP_GROW_SIZE : 0)
+        4     n < 0 && (n = typemax(Int))
+        - 
+        -     @static if Sys.iswindows()
+        -         io = MmapIO(f, write, 0, C_NULL, C_NULL, C_NULL, C_NULL, Int64[], 0)
+        -     else
+        4         io = MmapIO(f, write, 0, C_NULL, C_NULL, C_NULL, Int64[], 0)
+        -     end
+        4     mmap!(io, n)
+        4     io.endptr = io.startptr + (initialsz % Int)
+        - 
+        4     io
+        - end
+        - 
+        - Base.show(io::IO, ::MmapIO) = print(io, "MmapIO")
+        - 
+        - function grow(io::IOStream, sz::Integer)
+        2     @static if Sys.islinux()
+        2         systemerror("ftruncate",
+        -             ccall(:ftruncate, Cint, (Cint, Int64), fd(io), sz) != 0)
+        -     else
+        -         truncate(io, sz)
+        -     end
+        - end
+        - 
+        - 
+        2 function Base.resize!(io::MmapIO, newend::Ptr{Cvoid})
+        2     io.write || throw(EOFError())
+        - 
+        -     # Resize file
+        2     ptr = io.startptr
+        2     newsz = Int(max(newend - ptr, io.curptr - ptr + FILE_GROW_SIZE))
+        -     @static if !Sys.iswindows()
+        2         grow(io.f, newsz)
+        -     end
+        - 
+        2     if newsz > io.n
+        -         # If we have not mapped enough memory, map more
+        0         munmap(io)
+        0         ptr = mmap!(io, max(newsz, io.n + MMAP_GROW_SIZE))
+        -     end
+        - 
+        -     # Set new end
+        2     io.endptr = ptr + newsz
+        2     io
+        - end
+        - 
+        2 function ensureroom(io::MmapIO, n::Integer)
+      688     ep = io.curptr + n
+      688     ep > io.endptr && resize!(io, ep)
+        - end
+        - 
+        - function truncate_and_close(io::MmapIO, endpos::Integer)
+        4     io.write && msync(io)
+        2     munmap(io)
+        2     truncate(io.f, endpos)
+        2     close(io.f)
+        - end
+        - 
+        - function Base.close(io::MmapIO)
+        2     io.write && msync(io)
+        2     munmap(io)
+        2     close(io.f)
+        - end
+        - 
+        - @static if Sys.isunix()
+        6     function Base.unsafe_write(io::MmapIO, ptr::Ptr{UInt8}, nb::UInt)
+        6         if nb > MMAP_CUTOFF
+        0             pos = position(io)
+        - 
+        -             # Ensure that the current page has been flushed to disk
+        0             msync(io, pos, min(io.endptr - io.curptr, nb))
+        - 
+        -             # Write to the underlying IOStream
+        0             regulario = io.f
+        0             seek(regulario, pos)
+        0             unsafe_write(regulario, ptr, nb)
+        - 
+        -             # Invalidate cache of any pages that were just written to
+        0             msync(io, pos, min(io.n - pos, nb), true)
+        - 
+        -             # Make sure the mapping encompasses the written data
+        0             ensureroom(io, nb + 1)
+        - 
+        -             # Seek to the place we just wrote
+        0             seek(io, pos + nb)
+        -         else
+        6             ensureroom(io, nb)
+        6             unsafe_copyto!(Ptr{UInt8}(io.curptr), ptr, nb)
+        6             io.curptr += nb
+        -         end
+        6         nb
+        -     end
+        - end
+        - 
+        - # Read a null-terminated string
+        - function read_bytestring(io::MmapIO)
+        2     ptr = pconvert(Ptr{UInt8}, io.curptr)
+        2     maxbytes = io.endptr - io.curptr + 1
+        2     q = @ccall memchr(ptr::Ptr{UInt8}, 0::Int32, maxbytes::Csize_t)::Ptr{UInt8}
+        2     q == C_NULL && throw(EOFError())
+        - 
+        2     str = unsafe_string(ptr, (q - ptr) % Int)
+        2     io.curptr += (q - ptr) % Int + 1
+        2     str
+        - end
+        - 
+      240 Base.position(io::MmapIO) = Int64(io.curptr - io.startptr)
+        - bufferpos(io::MmapIO) = Int64(io.curptr - io.startptr)
+        - 
+        - # We sometimes need to compute checksums. We do this by first calling begin_checksum when
+        - # starting to handle whatever needs checksumming, and calling end_checksum afterwards. Note
+        - # that we never compute nested checksums, but we may compute multiple checksums
+        - # simultaneously. This strategy is not thread-safe.
+        - 
+        - function begin_checksum_read(io::MmapIO)
+       12     idx = io.nchecksum += 1
+       12     if idx > length(io.checksum_pos)
+        4         push!(io.checksum_pos, position(io))
+        -     else
+        8         @inbounds io.checksum_pos[idx] = position(io)
+        -     end
+       12     io
+        - end
+        - 
+        2 function begin_checksum_write(io::MmapIO, sz::Integer)
+        4     ensureroom(io, sz)
+        6     begin_checksum_read(io)
+        - end
+        - 
+        - function end_checksum(io::MmapIO)
+       12     @inbounds v = io.checksum_pos[io.nchecksum]
+       12     io.nchecksum -= 1
+       12     Lookup3.hash(Ptr{UInt8}(io.startptr + v), position(io) - v)
+        - end

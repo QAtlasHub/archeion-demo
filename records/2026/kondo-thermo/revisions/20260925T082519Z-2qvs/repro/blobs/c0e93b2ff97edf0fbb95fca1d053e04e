@@ -1,0 +1,215 @@
+# ParamIO.jl
+
+[![docs: stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://qatlashub.github.io/ParamIO.jl/stable/)
+[![docs: dev](https://img.shields.io/badge/docs-dev-purple.svg)](https://qatlashub.github.io/ParamIO.jl/dev/)
+[![Julia](https://img.shields.io/badge/julia-v1.12+-9558b2.svg)](https://julialang.org)
+[![Code Style: Blue](https://img.shields.io/badge/Code%20Style-Blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
+
+[![codecov](https://codecov.io/gh/QAtlasHub/ParamIO.jl/graph/badge.svg?token=57dh1RFl0t)](https://codecov.io/gh/QAtlasHub/ParamIO.jl)
+[![Build Status](https://github.com/QAtlasHub/ParamIO.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/QAtlasHub/ParamIO.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Read a config TOML and expand it into a list of `DataKey` — one per parameter
+point in a sweep. Pure parsing and Cartesian enumeration: no IO, no storage, no
+side effects.
+
+ParamIO is **layer 1 of a three-package HPC stack**. It answers *what to
+compute*; [`DataVault.jl`](https://github.com/QAtlasHub/DataVault.jl) answers
+*where results go* (`DataKey` → storage), and
+[`SweepRunner.jl`](https://github.com/QAtlasHub/SweepRunner.jl)
+answers *do it* (`run!(work_fn, vault, keys)`, parallel and crash-recoverable).
+
+```text
+ParamIO            DataVault           SweepRunner
+config.toml  ──►   Vault(config)  ──►  run!(work_fn, vault, keys)
+   │  expand
+   ▼
+Vector{DataKey}
+```
+
+## Quick start
+
+```julia
+using ParamIO
+
+spec = ParamIO.load("config.toml")     # TOML → ConfigSpec
+keys = ParamIO.expand(spec)            # → Vector{DataKey}, one per (point × sample)
+
+k = keys[1]
+k.params              # Dict("system.N" => 8, "model.g" => 0.5, …)  — DOTTED keys
+k.sample              # 1
+ParamIO.format_path(k, spec.path_keys) # "sysN8_modg0.50"  — the on-disk dir name
+ParamIO.canonical(k)  # "model.g=0.5;system.N=8;#sample=1"  — stable identity
+```
+
+Run [`examples/inspect.jl`](examples/inspect.jl) to print the full expansion of a
+sample config — the fastest way to see what `expand` produces:
+
+```bash
+julia --project=. examples/inspect.jl
+```
+
+## Config schema
+
+```toml
+[study]
+project_name  = "demo"          # study name (used by DataVault)
+total_samples = 2               # repeats per parameter point
+outdir        = "out"           # default output root
+
+[datavault]
+path_keys = ["system.N", "model.g"]   # DOTTED keys that name the on-disk dirs
+# sweep_order = [...]                  # optional: override enumeration order
+
+[[paramsets]]
+[paramsets.system]
+N = [8, 16]                     # list  ⇒ swept axis
+T = { start = 1.0, stop = 4.0, length = 31 }   # grid ⇒ swept axis (31-pt linspace)
+[paramsets.model]
+g = [0.5, 1.0]                  # list  ⇒ swept axis
+J = 1.0                         # scalar ⇒ fixed (still present in every DataKey)
+```
+
+`expand` takes the Cartesian product of all list-valued params across every
+`[[paramsets]]` block, multiplies by `total_samples`, and deduplicates. Optional
+`[base] inherit = "parent.toml"` merges a parent config first.
+
+Deduplication is across blocks, so `length(expand(spec))` is **not** the product of the axis
+lengths whenever two blocks overlap. The first block to produce a point also fixes its position,
+which makes a small leading block a way to order a long acquisition: put the slice you want closed
+first at the top, let it overlap a later broader block, and pay nothing for the repeat.
+`expand_report(spec)` returns the per-block contribution, which is what tells a block that added
+nothing from a block that was never read.
+
+### Projections
+
+A piece of a sweep's work often depends on only some of its axes. `project` is that sub-key space,
+as an ordinary `ConfigSpec`, so the rest of the stack applies to it unchanged:
+
+```julia
+states = ParamIO.project(spec, ["system.L", "model.lambda", "thermal.beta"]; total_samples=1)
+length(ParamIO.expand(states))   # how many distinct states this config needs
+```
+
+Every other parameter is dropped. `DataKey.sample` is not a parameter, so `total_samples` rather
+than `axes` decides whether the projection keeps the sample dimension.
+
+### Artifacts — intermediate results shared across cells
+
+When the expensive part of a cell depends on only some of its axes — a ground state that does
+not depend on the drive frequency — declare it, and name every parameter it reads:
+
+```toml
+[[paramsets]]
+[paramsets.run]
+U      = [0.0, 0.2]
+D      = [64, 128]
+omega1 = [1.2, 1.5, 1.8]
+cutoff = 1.0e-14                     # fixed knobs are ordinary scalars, so they are in the key
+
+[artifacts.ground_state]
+depends_on = ["U", "D", "cutoff"]    # resolved like path_keys: dotted, or a unique leaf
+version    = 1                       # bump when the code that builds it changes
+# per_sample = true                  # if it also depends on the sample index
+```
+
+```julia
+artifact_identity(spec, :ground_state, key)  # "ground_state@v1|run.D=64;run.U=0.0;run.cutoff=1.0e-14;#sample=1"
+artifact_keys(spec, :ground_state)           # the 4 distinct points the 12 cells need
+```
+
+ParamIO only says what an artifact **is**; storing, locking and reusing it is DataVault's job.
+The identity is exactly `depends_on` plus `version`, so **a parameter the builder reads but
+`depends_on` omits does not invalidate it** — the artifact is then reused across that
+parameter's values. `load` refuses an unknown field, an empty `depends_on` and a name some
+`[[paramsets]]` block lacks, because each of those silently widens what is shared.
+
+### Grid axes — concise sweeps
+
+For a fine Monte-Carlo or finite-size-scaling sweep, write an axis as a **grid** instead of a
+hand-typed list. It expands to a list *before* the product, so it sweeps exactly like one:
+
+| form | expands to |
+| --- | --- |
+| `{ start = 1.0, stop = 4.0, length = 31 }` | 31-point linspace, inclusive → `Float64` |
+| `{ start = 16, stop = 128, step = 16 }` | `16:16:128` → `Int` |
+| `{ start = 1e-3, stop = 1.0, length = 7, scale = "log" }` | 7 log-spaced points |
+
+`length` (≥ 2) and `step` are mutually exclusive; exactly one is required. A malformed grid
+**errors** (it never silently degrades to a fixed value). A namespace that merely *contains* a
+`start`/`stop` parameter alongside others (e.g. a `dt`) is **not** a grid.
+
+### Fixed list values — `{ const = … }`
+
+A plain list is **always** a swept axis. To pass a list as a *value* — an inhomogeneous coupling
+vector, a field profile — wrap it in `const`; it is never swept:
+
+```toml
+J  = { const = [1.0, 0.5, 0.5] }   # one fixed 3-vector, carried in every DataKey
+Js = [1.0, 0.5, 0.5]               # three separate runs (a sweep)
+```
+
+So the two leaf-table forms are duals: a **grid** (`{ start, stop, … }`) is a swept list, a
+**const** (`{ const = … }`) is a fixed value.
+
+## The one thing that trips people up
+
+`DataKey.params` is keyed by the **dotted** `group.leaf` path, matching
+`path_keys`:
+
+```julia
+param(key, "system.N")   # ✅  dotted
+param(key, "N")          # ✅  the leaf, when only one group has it
+param(key, "N", Float64) # ✅  …and refuses the conversion if it would change the number
+
+key.params["system.N"]   # ✅  the raw Dict is still there
+key.params["N"]          # ❌  KeyError — no resolution, and no report of what does exist
+```
+
+A fixed scalar (`J` above) is **not** swept but **is** carried in every `DataKey`
+as `"model.J"`. Only `path_keys` participate in `format_path` (the directory
+name); `canonical` uses *all* params plus the sample index.
+
+## API
+
+| Function | Use |
+| --- | --- |
+| `load(path; inherit=true) -> ConfigSpec` | parse TOML, merge `[base] inherit` |
+| `expand(spec; sweep_order=nothing) -> Vector{DataKey}` | Cartesian product × samples |
+| `expand_report(spec; sweep_order=nothing) -> NamedTuple` | the same keys, plus what deduplication removed |
+| `project(spec, axes; total_samples=…) -> ConfigSpec` | the spec over `axes` alone |
+| `project(key, axes; sample=key.sample) -> DataKey` | one key over `axes` alone |
+| `artifact_key(spec, name, key) -> DataKey` | the point of artifact `name` that `key` needs |
+| `artifact_identity(spec, name, key) -> String` | that point as a stable on-disk identity, with `version` |
+| `artifact_keys(spec, name) -> Vector{DataKey}` | every distinct point of artifact `name` the sweep needs |
+| `format_path(key, path_keys) -> String` | compact directory segment |
+| `canonical(key) -> String` | stable, Julia-version-independent key identity |
+| `param(key, name[, T]) -> value` | one parameter, resolved dotted-or-leaf and optionally typed |
+| `resolve_path_keys(blocks) -> Vector{String}` | auto-detect `path_keys` if omitted |
+
+## Source layout
+
+```text
+src/
+├── ParamIO.jl        module entry (includes + exports)
+├── core/             public API
+│   ├── types.jl      DataKey, ConfigSpec, StudySpec, errors
+│   ├── load.jl       TOML load + inherit merge
+│   ├── expand.jl     Cartesian expansion + sweep order
+│   ├── project.jl    project (a coordinate projection of the key space)
+│   ├── format.jl     format_path
+│   └── canonical.jl  canonical (FROZEN schema — downstream identity)
+└── util/             internal (flatten, path_keys)
+```
+
+## See also
+
+- [DataVault.jl](https://github.com/QAtlasHub/DataVault.jl) — storage layer
+- [SweepRunner.jl](https://github.com/QAtlasHub/SweepRunner.jl) — the runtime
+- [`../CLAUDE.md`](../CLAUDE.md) — how the three packages fit together
+
+Issues / requests: [GitHub Issues](https://github.com/QAtlasHub/ParamIO.jl/issues).
+
+## License
+
+MIT.

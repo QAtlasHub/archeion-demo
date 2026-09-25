@@ -1,0 +1,7 @@
+[testfiles]
+git-tree-sha1 = "cbb8e817ccaab68075ae3e5532c193d16bf19995"
+lazy = true
+
+    [[testfiles.download]]
+    sha256 = "c32e5e09a46645e12bcaa2a9d271b25fecf5e8039ad833e0690051ab6619aecb"
+    url = "https://github.com/JonasIsensee/JLD2TestFiles/archive/refs/tags/v0.1.9.tar.gz"

@@ -1,0 +1,11 @@
+[deps]
+Archeion = "4f7774e9-efb7-42d6-b735-122dcc7ea7b8"
+DataVault = "23f5f8f6-b4da-40ee-8c72-c53b6c5de94f"
+ParamIO = "938a3ac2-d340-473c-bcf1-88af577e4ccf"
+Pinax = "e782a80a-1ac9-479e-ba2b-0f3433ef5b4f"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+
+[sources]
+Archeion = {rev = "e35c81c", url = "https://github.com/QAtlasHub/Archeion.jl"}
+ParamIO = {rev = "main", url = "https://github.com/QAtlasHub/ParamIO.jl"}
+Pinax = {rev = "main", url = "https://github.com/QAtlasHub/Pinax.jl"}

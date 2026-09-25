@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kondo screening in the symmetric Anderson model: NRG thermodynamics across U/Γ</title><script>(function(){var d="system",v;try{v=localStorage.getItem("pinax-appearance")}catch(e){}if(v!=="light"&&v!=="dark"&&v!=="system")v=d;if(v!=="system")document.documentElement.setAttribute("data-theme",v);})()</script><link rel="stylesheet" href="assets/katex/katex.min.css"><link rel="stylesheet" href="style.css"></head><body>
+<button class="pinax-appearance" type="button" hidden></button>
+<h1>Kondo screening in the symmetric Anderson model: NRG thermodynamics across U/Γ</h1>
+<div class="pinax-meta">2 figures</div>
+<script type="application/json" id="pinax-committed">{"comments":{},"bookmarks":{},"features":["comments","bookmarks","export"]}</script>
+<nav><strong>Contents</strong>
+<a href="#kondo">Kondo screening across U/Γ <span class="nfig">(2)</span></a>
+<a href="#flow" style="margin-left:1.2rem">Entropy and susceptibility along the flow <span class="nfig">(2)</span></a>
+<a href="#tk" style="margin-left:1.2rem">The Kondo scale</a>
+</nav>
+<section class="page" id="kondo"><h1>Kondo screening across U/Γ</h1>
+<div class="desc"><p>Symmetric Anderson model &#40;$\varepsilon_d = -U/2$, flat band of half-width $D = 1$, $\Gamma = 0.03$&#41; solved by <code>WilsonNRG.thermodynamics</code>: Wilson&#39;s logarithmic discretization with $\Lambda = 2$, U&#40;1&#41;×U&#40;1&#41; symmetry, an energy cut of 6 and 18 chain sites, one run per $U/\Gamma$. Impurity quantities are the two-run difference &#40;full minus bath&#41;, as in Krishna-murthy, Wilkins &amp; Wilson &#40;1980&#41;.</p>
+<p><strong>Scope.</strong> One discretization, one truncation, one chain length. The lowest temperature reached is set by the chain length, so the largest $U/\Gamma$ may not be screened within it. Nothing here is z-averaged, and nothing is converged in $\Lambda$ or in the cut.</p></div>
+<section class="section" id="flow"><h2>Sec. 1. Entropy and susceptibility along the flow <span class="nfig">(2)</span></h2>
+<div class="figgrid">
+<figure id="flow_fig1">
+<img src="assets/figures/kondo/flow/flow_fig1.svg" alt="flow_fig1">
+<a class="pinax-dl" href="assets/figures/kondo/flow/flow_fig1.svg" download title="download flow_fig1.svg">⤓ download</a>
+<figcaption><b>Fig. 1.</b> T χ_imp against T. A local moment sits at 1/4, the free orbital at 1/8; screening takes it to 0. The dotted line is Wilson&#39;s 0.0701.</figcaption>
+</figure>
+<figure id="flow_fig2">
+<img src="assets/figures/kondo/flow/flow_fig2.svg" alt="flow_fig2">
+<a class="pinax-dl" href="assets/figures/kondo/flow/flow_fig2.svg" download title="download flow_fig2.svg">⤓ download</a>
+<figcaption><b>Fig. 2.</b> S_imp against T: ln 4 &#40;free orbital&#41; → ln 2 &#40;local moment&#41; → 0 &#40;screened singlet&#41;.</figcaption>
+</figure>
+</div>
+</section>
+<section class="section" id="tk"><h2>Sec. 2. The Kondo scale</h2>
+<div class="desc"><p>$T_K$ is read where $T\chi_{\rm imp}$ falls through 0.0701 &#40;Wilson&#39;s definition&#41; and compared with Haldane&#39;s $T_K = \sqrt{U\Gamma/2}\,e^{-\pi U/8\Gamma + \pi\Gamma/2U}$, which holds for $U \gg \Gamma$. The two definitions differ by an O&#40;1&#41; factor, so what is asked is whether <strong>the ratio stays constant</strong> as $T_K$ falls. It does not: it drifts from 0.96 at $U/\Gamma = 4$ to 1.25 at 8. Two causes are open and neither is tested here — the $\Lambda = 2$ renormalisation of $\Gamma$, and reading $T_K$ near the end of an 18-site chain at the largest $U/\Gamma$. At $U/\Gamma = 2$ the model is mixed-valent and Haldane&#39;s form does not apply.</p></div>
+<figure class="pinax-table" id="tk_tbl1"><table>
+<thead><tr><th>U/Γ</th><th>T_K (Wilson)</th><th>T_K (Haldane)</th><th>ratio</th><th>Tχ at lowest T</th><th>S at lowest T</th></tr></thead>
+<tbody>
+<tr><td>0.0</td><td>—</td><td>—</td><td>—</td><td>0.00524</td><td>0.0612</td></tr>
+<tr><td>2.0</td><td>0.0228</td><td>0.03</td><td>0.76</td><td>0.0105</td><td>0.0705</td></tr>
+<tr><td>4.0</td><td>0.0125</td><td>0.0131</td><td>0.96</td><td>0.0188</td><td>0.0997</td></tr>
+<tr><td>6.0</td><td>0.00698</td><td>0.0064</td><td>1.09</td><td>0.0343</td><td>0.175</td></tr>
+<tr><td>8.0</td><td>0.00394</td><td>0.00316</td><td>1.25</td><td>0.0545</td><td>0.277</td></tr>
+</tbody></table>
+<figcaption>T_K from the flow against the analytic scale</figcaption>
+</figure>
+</section>
+</section>
+<script>(function(){var d="system",K="pinax-appearance",r=document.documentElement,
+b=document.querySelector(".pinax-appearance");if(!b)return;
+function read(){var v;try{v=localStorage.getItem(K)}catch(e){}
+return (v==="light"||v==="dark"||v==="system")?v:d}
+function next(v){return v==="system"?"light":v==="light"?"dark":"system"}
+function show(v){if(v==="system"){r.removeAttribute("data-theme")}else{r.setAttribute("data-theme",v)}
+b.textContent=v==="dark"?"\u263e dark":v==="light"?"\u2600 light":"\u25d0 system";
+b.setAttribute("aria-label","Colour scheme: "+v+". Click for "+next(v)+".");b.hidden=false}
+show(read());
+b.addEventListener("click",function(){var v=next(read());try{localStorage.setItem(K,v)}catch(e){}show(v)})})()</script><script src="app.js"></script><script defer src="assets/katex/katex.min.js"></script><script defer src="assets/katex/contrib/auto-render.min.js"></script><script>window.addEventListener("load",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}],macros:{},throwOnError:false});});</script></body></html>

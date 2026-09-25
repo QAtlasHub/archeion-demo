@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          # Please note: You must specify the full Julia version number (major.minor.patch).
+          # This is because the value here will be directly interpolated into a download URL.
+          - '1.0.5'  # minimum Julia version supported in Project.toml
+          - '1.6.7'  # previous LTS
+          - '1.10.7' # current LTS
+          - '1.11.2' # currently the latest stable release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Docker
+        run: |
+          docker version
+          docker compose version
+          docker build --build-arg JULIA_VERSION="${MATRIX_VERSION:?}" -t slurm-cluster-julia -f ci/Dockerfile .
+          docker compose -f ci/docker-compose.yml up -d
+          docker ps
+        env:
+          MATRIX_VERSION: ${{matrix.version}}
+      - name: Test Docker
+        run: |
+          docker exec -t slurmctld julia --version
+          docker exec -t slurmctld srun -n 4 hostname
+      - name: Test SlurmClusterManager
+        run: |
+          docker exec -t slurmctld /home/docker/SlurmClusterManager/ci/ci_entrypoint.bash
+      - run: find . -type f -name '*.cov'
+      - name: Copy .cov files out of the Docker container
+        run: docker exec slurmctld /bin/bash -c 'cd /home/docker/SlurmClusterManager && tar -cf - src/*.cov' | tar -xvf -
+      - run: find . -type f -name '*.cov'
+      # - run: find . -type f -name '*.cov' -exec cat {} \;
+      - uses: julia-actions/julia-processcoverage@v1
+      - uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # If this PR is from a fork, then do NOT fail CI if the Codecov upload errors.
+          # If this PR is NOT from a fork, then DO fail CI if the Codecov upload errors.
+          # If this is not a PR, then DO fail CI if the Codecov upload errors.
+          fail_ci_if_error: ${{ github.event_name != 'pull_request' || github.repository == github.event.pull_request.head.repo.full_name }}

@@ -1,0 +1,231 @@
+binding = "unverified"
+binding_reasons = ["config: no package was loaded from the config's repository, so the study's code is not among what was checked"]
+main_files = ["/cache/build/builder-amdci5-2/julialang/julia-release-1-dot-12/base/sysimg.jl"]
+observation_version = 1
+observed_at = "2026-09-25T08:23:47Z"
+phase = "run-start"
+program = "/home/souta/work/Vault/studies/kondo-thermo/compute.jl"
+revise_loaded = false
+source = "src1-887dd65bcf70d9c4e18dd466a32c889df20db2744f8a5c3d161385334c0be5eb"
+token = "obs1-20260925T082348Z-2e3bf8-37b353e031bcca5f"
+
+[env]
+JULIA_NUM_THREADS = "36"
+
+[environment]
+manifest_sha256 = "19cf9bb485d52d6f3f78f13ff570893e4f2bcd24c91b90668d7b6c9edc48474d"
+project_sha256 = "9cfcf3b3e0eef0f14f86bb931bb36c1efcdcee9275f36e54e68b9f5afc4aaa26"
+
+[julia]
+bindir = "/home/souta/.julia/juliaup/julia-1.12.2+0.x64.linux.gnu/bin"
+blas_libraries = ["libopenblas64_.so"]
+blas_threads = 18
+check_bounds = 0
+commit = "ca9b6662be434e718dc97778a25c777c4e277a34"
+cpu_name = "skylake-avx512"
+executable_sha256 = "4f5adc0267a6a766939cfe2db5978fc79ed2605d0eb6c82fd9f3c5520c07b382"
+fast_math = 0
+image_file = "/home/souta/.julia/juliaup/julia-1.12.2+0.x64.linux.gnu/lib/julia/sys.so"
+opt_level = 2
+platform = "x86_64-linux-gnu-libgfortran5-cxx11-libstdcxx30-julia_version+1.12.2"
+threads = 36
+version = "1.12.2"
+
+[process]
+host = "panza"
+myid = 1
+pid = 3030008
+role = "master"
+
+[[roots]]
+dir = "/home/souta/work/Vault/studies/kondo-thermo"
+dirty = "unknown"
+head = "unknown"
+kind = "plain"
+loaded = "not-loaded"
+name = "config"
+object_format = "unknown"
+[[roots]]
+dir = "/home/souta/.julia/artifacts/4db1e58d71ac6bbb35ecc832033264c630d5d3b3"
+dirty = "unknown"
+head = "4db1e58d71ac6bbb35ecc832033264c630d5d3b3"
+kind = "artifact"
+loaded = "not-loaded"
+name = "artifact:Zstd:4db1e58d71ac6bbb35ecc832033264c630d5d3b3"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/ChunkCodecCore/tE84Z"
+dirty = "unknown"
+head = "3496e2b359c27793d12bec54ec94be7983a6ceb2"
+kind = "depot"
+loaded = "matches"
+name = "pkg:ChunkCodecCore:0b6fb165-00bc-4d37-ab8b-79f91016dbe1"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/ChunkCodecLibZlib/EveAQ"
+dirty = "unknown"
+head = "d4101e848e8d3f585d61d244c2fe0c80a70e6b3b"
+kind = "depot"
+loaded = "matches"
+name = "pkg:ChunkCodecLibZlib:4c0bbee4-addc-4d73-81a0-b6caacae83c8"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/ChunkCodecLibZstd/Rfg35"
+dirty = "unknown"
+head = "34d9873079e4cb3d0c62926a225136824677073f"
+kind = "depot"
+loaded = "matches"
+name = "pkg:ChunkCodecLibZstd:55437552-ac27-4d47-9aa3-63184e8fd398"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/CommonSolve/zocpq"
+dirty = "unknown"
+head = "6c389fa857f6ca5a95474b52a52023fd77f24cb7"
+kind = "depot"
+loaded = "matches"
+name = "pkg:CommonSolve:38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/DataVault/slGYQ"
+dirty = "unknown"
+head = "b58bebe9d90b10ed306830801a11ef7bdbeaa45a"
+kind = "depot"
+loaded = "matches"
+name = "pkg:DataVault:23f5f8f6-b4da-40ee-8c72-c53b6c5de94f"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/FileIO/pFGbU"
+dirty = "unknown"
+head = "6621fef488e496356c9c9625d0562c12a6070819"
+kind = "depot"
+loaded = "matches"
+name = "pkg:FileIO:5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/JLD2/rm5a0"
+dirty = "unknown"
+head = "9ce2e7c49ae4a7035b7d60db3a553b1f6c16875d"
+kind = "depot"
+loaded = "matches"
+name = "pkg:JLD2:033835bb-8acc-5ee8-8aae-3f567f8a3819"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/JLLWrappers/Kp7TC"
+dirty = "unknown"
+head = "7204148362dafe5fe6a273f855b8ccbe4df8173e"
+kind = "depot"
+loaded = "matches"
+name = "pkg:JLLWrappers:692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/JSON3/rT1w2"
+dirty = "unknown"
+head = "411eccfe8aba0814ffa0fdf4860913ed09c34975"
+kind = "depot"
+loaded = "matches"
+name = "pkg:JSON3:0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/MacroTools/Ar0jT"
+dirty = "unknown"
+head = "1e0228a030642014fe5cfe68c2c0a818f9e3f522"
+kind = "depot"
+loaded = "matches"
+name = "pkg:MacroTools:1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/OrderedCollections/1sijc"
+dirty = "unknown"
+head = "05f45c2e0de6259db764adbfd2f1dc6d3f8de13c"
+kind = "depot"
+loaded = "matches"
+name = "pkg:OrderedCollections:bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/ParamIO/MSOex"
+dirty = "unknown"
+head = "ffcefc00da37b57e4a58626cf5e25f1c220198f3"
+kind = "depot"
+loaded = "matches"
+name = "pkg:ParamIO:938a3ac2-d340-473c-bcf1-88af577e4ccf"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/Parsers/xi9N1"
+dirty = "unknown"
+head = "ba0dc8a8a67cacac4842631f960c046e4e563675"
+kind = "depot"
+loaded = "matches"
+name = "pkg:Parsers:69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/PrecompileTools/QUxvR"
+dirty = "unknown"
+head = "edbeefc7a4889f528644251bdb5fc9ab5348bc2c"
+kind = "depot"
+loaded = "matches"
+name = "pkg:PrecompileTools:aea7be01-6a6a-4083-8856-8a6e6704d82a"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/Preferences/DwMOj"
+dirty = "unknown"
+head = "5005266de4bfe50e53ff44a5cb5c540b6e47a254"
+kind = "depot"
+loaded = "matches"
+name = "pkg:Preferences:21216c6a-2e73-6563-6e65-726566657250"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/Requires/1eCOK"
+dirty = "unknown"
+head = "62389eeff14780bfe55195b7204c0d8738436d64"
+kind = "depot"
+loaded = "matches"
+name = "pkg:Requires:ae029012-a4dd-5104-9daa-d747884805df"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/ScopedValues/sILa0"
+dirty = "unknown"
+head = "67a144433c4ce877ee6d1ada69a124d6b1ecf7be"
+kind = "depot"
+loaded = "matches"
+name = "pkg:ScopedValues:7e506255-f358-4e82-b7e4-beb19740aa63"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/SlurmClusterManager/5cccZ"
+dirty = "unknown"
+head = "0689bbb1a914b979cf01419c7d8b553425ba18e9"
+kind = "depot"
+loaded = "matches"
+name = "pkg:SlurmClusterManager:c82cd089-7bf7-41d7-976b-6b5d413cbe0a"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/StructTypes/PaLwj"
+dirty = "unknown"
+head = "159331b30e94d7b11379037feeb9b690950cace8"
+kind = "depot"
+loaded = "matches"
+name = "pkg:StructTypes:856f2bd8-1eba-4b0a-8007-ebc267875bd4"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/SweepRunner/tjZGN"
+dirty = "unknown"
+head = "34e9080deab3332034d74b8d5720ca75e129367c"
+kind = "depot"
+loaded = "matches"
+name = "pkg:SweepRunner:be946ad2-3cb3-4b6e-8f7e-4a5ecc3c255b"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/WilsonNRG/b1rkv"
+dirty = "unknown"
+head = "d1eabe910bf94b62dbb6e283fafbf821f4a4e174"
+kind = "depot"
+loaded = "matches"
+name = "pkg:WilsonNRG:a92edc93-45ef-4f47-9db6-5fadb6770817"
+object_format = "sha1"
+[[roots]]
+dir = "/home/souta/.julia/packages/Zstd_jll/YX1LN"
+dirty = "unknown"
+head = "446b23e73536f84e8037f5dce465e92275f6a308"
+kind = "depot"
+loaded = "matches"
+name = "pkg:Zstd_jll:3161d3a3-bdf6-5164-811a-617609db77b4"
+object_format = "sha1"

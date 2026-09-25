@@ -10,5 +10,6 @@ afa96d7e-4e77-4a09-a7af-73dc5c56e7ca = { name = "wilson-nrg", path = "projects/w
 d1048ffd-bb6e-42a4-9f4c-8a0e8fae1ae8 = { name = "demo", path = "projects/demo.toml" }
 
 [records]
+2a55ada6-d482-4566-aca7-fb4ce8dc0197 = { name = "Kondo screening in the symmetric Anderson model: NRG thermodynamics across U/Γ", path = "records/2026/kondo-thermo" }
 67d8ba04-c694-412c-b339-09418b67d5ec = { name = "The logistic map, as a model record", path = "records/2026/logistic-map" }
 f7aab857-57a7-4f6e-8536-fafab00a9942 = { name = "The Lorenz system: the largest Lyapunov exponent across ρ", path = "records/2026/lorenz-lyapunov" }

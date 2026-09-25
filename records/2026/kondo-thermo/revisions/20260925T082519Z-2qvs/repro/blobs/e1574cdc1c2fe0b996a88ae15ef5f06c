@@ -1,0 +1,467 @@
+        - #
+        - # Datasets
+        - #
+        2 function load_dataset(f::JLDFile{IO}, offset::RelOffset) where IO
+        2     if haskey(f.jloffset, offset)
+        -         # There is a known (loaded) dataset at offset
+        -         # Stored as WeakRefs and may no longer exist
+        0         val = f.jloffset[offset].value
+        0         val !== nothing && return val
+        2     elseif haskey(f.loaded_groups, offset)
+        -         # There is a known (loaded) group at offset
+        0         return f.loaded_groups[offset]
+        -     end
+        - 
+        2     dataspace = ReadDataspace()
+        2     attrs = EMPTY_READ_ATTRIBUTES
+        2     dt::H5Datatype = PlaceholderH5Datatype()
+        2     layout::DataLayout = DataLayout(0,LcCompact,0,-1)
+        2     filter_pipeline::FilterPipeline = FilterPipeline()
+        - 
+        2     for msg in HeaderMessageIterator(f, offset)
+       10         if msg.type == HmDataspace
+        2             dataspace = ReadDataspace(f, msg)
+        8         elseif msg.type == HmDatatype
+        2             dt = HmWrap(HmDatatype, msg).dt::H5Datatype
+        6         elseif msg.type == HmDataLayout
+        2             layout = DataLayout(f, msg)
+        4         elseif msg.type == HmFilterPipeline
+        0             filter_pipeline = FilterPipeline(msg)
+        4         elseif msg.type == HmAttribute
+        0             isempty(attrs) && (attrs = ReadAttribute[])
+        0             push!(attrs, read_attribute(f, msg))
+        4         elseif (msg.hflags & 2^3) != 0
+        0             throw(UnsupportedFeatureException())
+        -         end
+       10     end
+        2     if dt isa PlaceholderH5Datatype
+        -         # checking whether something is a group is not cheap.
+        -         # Do it only when it is not a dataset
+        0         if isgroup(f, offset)
+        -             # There is a not-yet loaded group at offset
+        0             return get!(()->load_group(f, offset), f.loaded_groups, offset)
+        -         end
+        - 
+        0         throw(InvalidDataException("No datatype message found"))
+        -     end
+        2     iscompressed(filter_pipeline) && !ischunked(layout) && throw(InvalidDataException("Compressed data must be chunked"))
+        2     Base.inferencebarrier(read_data(f, dataspace, dt, layout, filter_pipeline, offset, attrs))
+        - end
+        - 
+        - 
+        - """
+        -     read_data(f::JLDFile, dataspace::ReadDataspace, datatype_class::UInt8,
+        -               datatype_offset::Int64, data_offset::Int64[, filters::FilterPipeline,
+        -               header_offset::RelOffset, attributes::Vector{ReadAttribute}])
+        - 
+        - Read data from a file. If `datatype_class` is `typemax(UInt8)`, the datatype is assumed to be
+        - committed, and `datatype_offset` points to the offset of the committed datatype's header.
+        - Otherwise, `datatype_offset` points to the offset of the datatype attribute.
+        - """
+        2 @nospecializeinfer function read_data(f::JLDFile, dataspace::ReadDataspace,
+        -                    @nospecialize(dt::H5Datatype),
+        -                    layout::DataLayout,
+        -                    filters::FilterPipeline=FilterPipeline(),
+        -                    header_offset::RelOffset=NULL_REFERENCE,
+        -                    attributes::Union{Vector{ReadAttribute},Nothing}=nothing)
+        2     rr = jltype(f, dt)
+        2     if layout.data_offset == -1
+        -         # There was no layout message.
+        -         # That means, this dataset is just a datatype
+        0         return julia_repr(rr)
+        2     elseif layout.data_offset == typemax(Int64)
+        0         T = julia_repr(rr)
+        0         if layout.data_length > -1
+        -             # TODO: this could use the fill value message to populate the array
+        0             @warn "This array should be populated by a fill value. This is not (yet) implemented."
+        -         end
+        0         v = Array{T, 1}()
+        0         track_weakref!(f, header_offset, v)
+        0         return v
+        -     end
+        2     seek(f.io, layout.data_offset)
+        2     read_dataspace = (dataspace, header_offset, layout, filters)
+        2     read_data(f, rr, read_dataspace, attributes)
+        - end
+        - 
+        - # Most types can only be scalars or arrays
+        2 @nospecializeinfer function read_data(f::JLDFile,
+        -      @nospecialize(rr),
+        -      read_dataspace::Tuple{ReadDataspace,RelOffset,DataLayout,FilterPipeline},
+        -      attributes::Union{Vector{ReadAttribute},Nothing}=nothing)
+        - 
+        2     dataspace, header_offset, layout, filters = read_dataspace
+        2     if dataspace.dataspace_type == DS_SCALAR
+        2         iscompressed(filters) && throw(UnsupportedFeatureException())
+        2         read_scalar(f, rr, header_offset)
+        0     elseif dataspace.dataspace_type == DS_SIMPLE
+        0         read_array(f, dataspace, rr, layout, filters, header_offset, attributes)
+        0     elseif dataspace.dataspace_type == DS_V1 && dataspace.dimensionality == 0
+        0         read_scalar(f, rr, header_offset)
+        0     elseif dataspace.dataspace_type == DS_V1
+        0         read_array(f, dataspace, rr, layout, filters, header_offset, attributes)
+        0     elseif dataspace.dataspace_type == DS_NULL
+        0         read_empty(f, rr, dataspace, attributes, header_offset)
+        -     else
+        0         throw(UnsupportedFeatureException())
+        -     end
+        - end
+        - 
+        - # Reference arrays can only be arrays or null dataspace (for Union{} case)
+        0 function read_data(f::JLDFile,
+        -     ::MappedRepr{Any,RelOffset},
+        -     read_dataspace::Tuple{ReadDataspace,RelOffset,DataLayout,FilterPipeline},
+        -     attributes::Vector{ReadAttribute})
+        - 
+        0     dataspace, header_offset, layout, filters = read_dataspace
+        0     iscompressed(filters) && throw(UnsupportedFeatureException())
+        0     if dataspace.dataspace_type == DS_SIMPLE
+        -         # Since this is an array of references, there should be an attribute
+        -         # informing us of the type
+        0         io = f.io
+        0         startpos = position(io)
+        0         for x in attributes
+        0             if x.name == :julia_type
+        0                 T = read_attr_data(f, x)
+        0                 if isunknowntype(T)
+        0                     str = typestring(T)
+        0                     @warn "type $(str) does not exist in workspace; interpreting Array{$str} as Array{Any}" maxlog=1
+        0                     rr = MappedRepr{Any,RelOffset}()
+        0                 elseif T isa Upgrade
+        0                     rr = MappedRepr{T.target, RelOffset}()
+        -                 else
+        0                     rr = ReadRepresentation(T, RelOffset)
+        -                 end
+        0                 seek(io, startpos)
+        0                 return read_array(f, dataspace, rr,
+        -                                   layout, filters, header_offset, attributes)
+        -             end
+        0         end
+        0     elseif dataspace.dataspace_type == DS_NULL
+        0         return read_empty(f, MappedRepr{Union{},nothing}(), dataspace, attributes, header_offset)
+        0     elseif dataspace.dataspace_type == DS_V1
+        0         return read_array(f, dataspace, MappedRepr{Any,RelOffset}(),
+        -                                   layout, filters, header_offset, attributes)
+        -     end
+        0     throw(UnsupportedFeatureException("Dataspace type $(dataspace.dataspace_type) not implemented"))
+        - end
+        - 
+        - # Types with no payload can only be null dataspace
+        0 function read_data(f::JLDFile,
+        -                    @nospecialize(rr::Union{ReadRepresentation{T,nothing} where T,
+        -                              ReadRepresentation{T,CustomSerialization{S,nothing}} where {S,T}}),
+        -                    read_dataspace::Tuple{ReadDataspace,RelOffset,DataLayout,FilterPipeline},
+        -                    attributes::Vector{ReadAttribute})
+        0     dataspace, header_offset, layout, filters = read_dataspace
+        0     iscompressed(filters) && throw(UnsupportedFeatureException())
+        0     dataspace.dataspace_type == DS_NULL || throw(UnsupportedFeatureException())
+        0     if !any(a->a.name==:dimensions, attributes)
+        0         jlconvert(rr, f, Ptr{Cvoid}(0), header_offset)
+        -     else
+        -         # dimensions attribute => array of empty type
+        0         read_empty(f, rr, dataspace, attributes, header_offset)
+        -     end
+        - end
+        - 
+        - function find_dimensions_attr(attributes::Vector{ReadAttribute})
+        -     dimensions_attr_index = 0
+        -     for i = 1:length(attributes)
+        -         x = attributes[i]
+        -         if x.name == :dimensions
+        -             dimensions_attr_index = i
+        -         end
+        -     end
+        -     dimensions_attr_index
+        - end
+        - 
+        0 function read_empty(f::JLDFile, rr::ReadRepresentation{T}, dataspace, attributes, header_offset::RelOffset) where T
+        0     ndims, offset = get_ndims_offset(f, dataspace, attributes)
+        0     seek(f.io, offset)
+        0     v = construct_array(f.io, T, Int(ndims))
+        0     if isconcretetype(T)
+        0         for i = 1:length(v)
+        0             @inbounds v[i] = jlconvert(rr, f, Ptr{Cvoid}(0), header_offset)
+        0         end
+        -     end
+        0     track_weakref!(f, header_offset, v)
+        0     v
+        - end
+        - 
+        0 get_ndims_offset(f::JLDFile, dataspace::ReadDataspace, attributes::Nothing) =
+        -     (dataspace.dimensionality, dataspace.dimensions_offset)
+        - 
+        0 function get_ndims_offset(f::JLDFile, dataspace::ReadDataspace, attributes::AbstractVector)
+        0     ndims = dataspace.dimensionality
+        0     offset = dataspace.dimensions_offset
+        0     if !isempty(attributes)
+        0         for x in attributes
+        0             if x.name == :dimensions
+        0                 (x.dataspace.dataspace_type == DS_SIMPLE &&
+        -                  x.dataspace.dimensionality == 1) || throw(InvalidDataException())
+        0                 x.datatype == h5fieldtype(f, Int64, Int64, Val{true}) || throw(UnsupportedFeatureException())
+        0                 seek(f.io, x.dataspace.dimensions_offset)
+        0                 ndims = UInt8(jlread(f.io, Length))
+        0                 offset = x.data_offset
+        -             end
+        0         end
+        -     end
+        0     (ndims, offset)
+        - end
+        - 
+        - """
+        -     construct_array(io::IO, eltype, ndims::Int)
+        - 
+        - Construct array by reading `ndims` dimensions from `io`. Assumes `io` has already been
+        - seeked to the correct position.
+        - """
+        0 function construct_array(io::IO, ::Type{T}, N::Int) where {T}
+        0     ds = reverse(ntuple(i->jlread(io, Int64), Val(N)))
+        0     Array{T,N}(undef, ds...)
+        - end
+        - 
+        0 @nospecializeinfer function read_array(f::JLDFile, dataspace::ReadDataspace,
+        -                     @nospecialize(rr::ReadRepresentation), layout::DataLayout,
+        -                     filters::FilterPipeline, header_offset::RelOffset,
+        -                     attributes::Union{Vector{ReadAttribute},Nothing})
+        0     T = julia_repr(rr)
+        0     io = f.io
+        0     ndims, offset = get_ndims_offset(f, dataspace, attributes)
+        0     seek(io, offset)
+        -     # figure out whether to construct an Array or a Memory
+        0     ismem = !isnothing(attributes) && any(attr->attr.name==:Memory, attributes)
+        -     v = @static if VERSION >= v"1.11"
+        0         if ismem
+        0             Memory{T}(undef, Int(jlread(io, Int64)))
+        -         else
+        0             construct_array(io, T, Int(ndims))
+        -         end
+        -     else
+        -         construct_array(io, T, Int(ndims))
+        -     end
+        - 
+        0     if !ischunked(layout) || (layout.chunk_indexing_type == 1)
+        0         n = length(v)
+        0         seek(io, layout.data_offset)
+        0         if iscompressed(filters)
+        0             read_compressed_array!(v, f, rr, layout.data_length, filters)
+        -         else
+        0             read_array!(v, f, rr)
+        -         end
+        0         track_weakref!(f, header_offset, v)
+        0         v
+        -     else
+        0         if layout.version == 3
+        -             # version 1 B-tree
+        -             # This version appears to be padding incomplete chunks
+        0             chunks = read_v1btree_dataset_chunks(f, h5offset(f, layout.data_offset), layout.dimensionality)
+        0             vchunk = Array{T, Int(ndims)}(undef, reverse(layout.chunk_dimensions)...)
+        0             for chunk in chunks
+        0                 cidx = chunk.idx::NTuple{Int(ndims+1), Int}
+        0                 idx = reverse(cidx[1:end-1])
+        0                 seek(io, fileoffset(f, chunk.offset))
+        0                 indexview =  (:).(idx .+1, min.(idx .+ reverse(layout.chunk_dimensions), size(v)))
+        0                 indexview2 = (:).(1, length.(indexview))
+        - 
+        0                 if iscompressed(filters)
+        0                     if chunk.filter_mask == 0
+        0                         read_compressed_array!(vchunk, f, rr, chunk.chunk_size, filters)
+        0                         v[indexview...] = @view vchunk[indexview2...]
+        -                     else
+        0                         if length(filters.filters) == 1
+        0                             read_array!(vchunk, f, rr)
+        0                             v[indexview...] = @view vchunk[indexview2...]
+        -                         else
+        0                             mask = Bool[chunk.filter_mask & 2^(n-1) == 0 for n=eachindex(filters.filters)]
+        0                             if any(mask)
+        0                                 rf = FilterPipeline(filters.filters[mask])
+        0                                 read_compressed_array!(vchunk, f, rr, chunk.chunk_size, rf)
+        0                                 v[indexview...] = @view vchunk[indexview2...]
+        -                             else
+        0                                 read_array!(vchunk, f, rr)
+        0                                 v[indexview...] = @view vchunk[indexview2...]
+        -                             end
+        - 
+        -                         end
+        -                     end
+        -                 else
+        0                     read_array!(vchunk, f, rr)
+        0                     v[indexview...] = @view vchunk[indexview2...]
+        -                 end
+        0             end
+        0             return v
+        -         end
+        0         throw(UnsupportedVersionException("Encountered a chunked array ($layout) that is not implemented."))
+        -     end
+        - end
+        - 
+        - 
+        - function payload_size_without_storage_message(dataspace::WriteDataspace, datatype::H5Datatype)
+        2     sz = 6 + 4 + jlsizeof(dataspace)::Int + 4 + jlsizeof(datatype) + length(dataspace.attributes)*jlsizeof(HeaderMessage)
+        2     for attr in dataspace.attributes
+        0         sz += jlsizeof(attr)::Int
+        0     end
+        2     sz
+        - end
+        - 
+        4 @nospecializeinfer function write_dataset(f::JLDFile,
+        -         dataspace::WriteDataspace,
+        -         datatype::H5Datatype,
+        -         @nospecialize(odr),
+        -         @nospecialize(data),
+        -         wsession::JLDWriteSession,
+        -         @nospecialize(filters = f.compress),)
+        4     io = f.io
+        2     datasz = (odr_sizeof(odr)::Int * numel(dataspace))::Int
+        2     psz = payload_size_without_storage_message(dataspace, datatype)
+        2     psz += CONTINUATION_MSG_SIZE
+        - 
+        4     local_filters = FilterPipeline(map(filters) do filter
+        -         Filters.set_local(filter, odr, dataspace, ())
+        -     end)
+        - 
+        -     # Figure out the layout
+        4     if datasz == 0 || (!(data isa ArrayMemory) && datasz < 8192)
+        2         layout_class = LcCompact
+        2         psz += jlsizeof(Val(HmDataLayout); layout_class, data_size=datasz)
+        0     elseif data isa ArrayMemory && iscompressed(local_filters) && isconcretetype(eltype(data)) && isbitstype(eltype(data))
+        0         layout_class = LcChunked
+        0         psz += jlsizeof(Val(HmDataLayout);
+        -             layout_class,
+        -             dimensions = UInt64.((reverse(size(data))..., odr_sizeof(odr))),
+        -             # Dummy values for message size computation
+        -             data_size = 0, data_address = 0,
+        -         )
+        0         psz += Filters.pipeline_message_size(local_filters)
+        -     else
+        0         layout_class = LcContiguous
+        0         psz += jlsizeof(Val(HmDataLayout); layout_class)
+        -     end
+        - 
+        2     fullsz = jlsizeof(ObjectStart) + size_size(psz) + psz + 4
+        - 
+        2     header_offset = f.end_of_data
+        2     seek(io, header_offset)
+        2     f.end_of_data = header_offset + fullsz
+        - 
+        2     track!(wsession, data, h5offset(f, header_offset))
+        2     cio = begin_checksum_write(io, fullsz - 4)
+        2     jlwrite(cio, ObjectStart(size_flag(psz)))
+        2     write_size(cio, psz)
+        2     write_header_message(cio, Val(HmFillValue); flags=0x09)
+        2     write_header_message(cio, Val(HmDataspace); dataspace.dataspace_type, dimensions=dataspace.size)
+        2     for attr in dataspace.attributes
+        0         write_header_message(cio, f, attr)
+        0     end
+        2     write_header_message(cio, Val(HmDatatype), 1 | (2*isa(datatype, CommittedDatatype)); dt=datatype)
+        - 
+        -     # Data storage layout
+        2     if layout_class == LcCompact
+        2         write_header_message(cio, Val(HmDataLayout); layout_class, data_size=datasz)
+        2         if datasz != 0
+        2             write_data(cio, f, data, odr, datamode(odr), wsession)
+        -         end
+        2         write_continuation_placeholder(cio)
+        2         jlwrite(io, end_checksum(cio))
+        0     elseif layout_class == LcChunked
+        0         compressed, retcodes = Filters.compress(local_filters, data, odr, f, wsession)
+        0         Filters.write_filter_pipeline_message(cio, local_filters)
+        - 
+        0         write_header_message(cio, Val(HmDataLayout);
+        -             layout_class,
+        -             # Reversed dimensions with element size as last dim
+        -             dimensions=UInt64.((reverse(size(data))..., odr_sizeof(odr))),
+        -             data_size=length(compressed),
+        -             data_address=h5offset(f, f.end_of_data)
+        -         )
+        - 
+        0         write_continuation_placeholder(cio)
+        0         jlwrite(f.io, end_checksum(cio))
+        - 
+        0         seek(f.io, f.end_of_data)
+        0         f.end_of_data += length(compressed)
+        0         jlwrite(f.io, compressed)
+        -     else
+        0         data_address = f.end_of_data + 8 - mod1(f.end_of_data, 8)
+        0         write_header_message(cio, Val(HmDataLayout);
+        -             layout_class, data_address=h5offset(f, data_address), data_size=datasz)
+        0         write_continuation_placeholder(cio)
+        0         jlwrite(io, end_checksum(cio))
+        - 
+        0         f.end_of_data = data_address + datasz
+        0         seek(io, data_address)
+        0         write_data(io, f, data, odr, datamode(odr), wsession)
+        -     end
+        - 
+        2     h5offset(f, header_offset)
+        - end
+        - 
+        - 
+        2 @nospecializeinfer function write_dataset(f::JLDFile, @nospecialize(x), wsession::JLDWriteSession)::RelOffset
+        2     offset = get_tracked(wsession, x)
+        2     offset != UNDEFINED_ADDRESS && return offset
+        4     odr = objodr(x)
+        2     write_dataset(f, WriteDataspace(f, x, odr), h5type(f, x), odr, x, wsession)::RelOffset
+        - end
+        - 
+        - write_ref(f::JLDFile, @nospecialize(x), wsession::JLDWriteSession) = write_dataset(f, x, wsession)::RelOffset
+        - write_ref(f::JLDFile, x::RelOffset, wsession::JLDWriteSession) = x
+        - 
+        - Base.delete!(f::JLDFile, x::AbstractString) = delete!(f.root_group, x)
+        - 
+        - function Base.delete!(g::Group, name::AbstractString)
+        -     g.f.writable || throw(ArgumentError("Cannot delete in read-only mode"))
+        -     if !haskey(g, name)
+        -         @warn "No entry named $name was found"
+        -         return
+        -     end
+        -     (g, name) = pathize(g, name, false)
+        - 
+        -     # Simple case first. If it hasn't been written yet,
+        -     # the file doesn't need to be altered.
+        -     if haskey(g.unwritten_links, name)
+        -         delete!(g.unwritten_links, name)
+        -         return
+        -     elseif haskey(g.unwritten_child_groups, name)
+        -         delete!(g.unwritten_child_groups, name)
+        -         return
+        -     end
+        - 
+        -     # Dataset must already exist in the file
+        -     # Retrieve offset of group in file
+        -     offset = group_offset(g)
+        -     offset == NULL_REFERENCE && throw(InternalError("Group could not be found."))
+        -     delete_written_link!(g.f, offset, name)
+        -     delete!(g.written_links, name)
+        -     return
+        - end
+        - 
+        - 
+        - function group_offset(g::Group)
+        -     # Given a group, retrieve its offset inside the parent file
+        -     # Return a null reference when it can't be found. However, that
+        -     # should never be the case as the calling functions checks for this
+        -     if g === g.f.root_group
+        -         return g.f.root_group_offset
+        -     end
+        -     for (offset, lg) in pairs(g.f.loaded_groups)
+        -         if lg === g
+        -             return offset
+        -         end
+        -     end
+        -     return NULL_REFERENCE
+        - end
+        - 
+        - function delete_written_link!(f::JLDFile, roffset::RelOffset, name::AbstractString)
+        -     # Location of written link in group structure is not known a priory
+        -     # The deletion is done by replacing that message by a placeholder nill message
+        -     iter = HeaderMessageIterator(f, roffset)
+        -     for msg in iter
+        -         if msg.type == HmLinkMessage && HmWrap(HmLinkMessage, msg).link_name == name
+        -             # delete link
+        -             seek(f.io, fileoffset(f, msg.offset))
+        -             write_header_message(f.io, Val(HmNil), 0, msg.size)
+        -             update_checksum(f.io, iter.chunk.chunk_start, iter.chunk.chunk_end)
+        -         end
+        -     end
+        -     return
+        - end
