@@ -4,7 +4,7 @@ name: deposit
 # only adds to it. Written by `julia -m Archeion pages --automerge=true`; run that again when the
 # version changes.
 on:
-  pull_request:
+  pull_request_target:
     branches: [master]
     types: [opened, synchronize, reopened]
 
@@ -26,15 +26,16 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+          persist-credentials: false
       - uses: julia-actions/setup-julia@v2
         with:
           version: "1.12"
       - name: Install Archeion into a throwaway environment
-        run: julia --startup-file=no -e 'using Pkg; Pkg.activate("archeion-env"); Pkg.add(url="https://github.com/QAtlasHub/Archeion.jl", rev="v0.8.12")'
+        run: julia --startup-file=no -e 'using Pkg; Pkg.activate("${{ runner.temp }}/archeion-env"); Pkg.add(url="https://github.com/QAtlasHub/Archeion.jl", rev="v0.8.14")'
       - name: The tree is well formed
-        run: julia --startup-file=no --project=archeion-env -m Archeion validate .
+        run: julia --startup-file=no --project=${{ runner.temp }}/archeion-env -m Archeion validate .
       - name: Nothing already in it was touched
-        run: julia --startup-file=no --project=archeion-env -m Archeion additions . --base=origin/${{ github.base_ref }}
+        run: julia --startup-file=no --project=${{ runner.temp }}/archeion-env -m Archeion additions . --base=origin/${{ github.base_ref }}
       - name: Merge the commit that was checked
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,3 +47,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run pages.yml --ref master --repo ${{ github.repository }}
+      - name: Say so on the pull request when any of this failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
+          --body "deposit.yml did not finish: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
